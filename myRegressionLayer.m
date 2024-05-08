@@ -19,16 +19,15 @@ classdef myRegressionLayer < nnet.layer.RegressionLayer ...
             %         Y     – Predictions made by network
             %         T     – Training targets
             % data loss: compute the difference between target and predicted values
-            %loss = mean((T-Y).^2,'all');
-            % physics loss;
-            %dY = gradient(Y,0.001);
-            YF = physics_law(Y);
-            TF = physics_law(T);
-            loss = mean((TF-YF).^2,'all');
-            % loss = 0.5*(mean((T-Y).^2,'all')+mean((TF-YF).^2,'all'));
-            % final loss, combining data loss and physics loss
-            % alpha = 0.0;
-            % loss = alpha*dataLoss + (1-alpha)*physicLoss;
+            % dataLoss = mean((T-Y).^2,'all');
+            loss = mean((T-Y).^2,'all');
+            % physics loss
+            % YF = physics_law(Y);
+            % TF = physics_law(T);
+            % physicLoss = mean((TF-YF).^2,'all');
+            % % final loss, combining data loss and physics loss
+            % alpha = 0.5;
+            % loss = (1.0-alpha)*dataLoss + alpha*physicLoss;
         end
 
         function dLdY = backwardLoss(layer,Y,T)

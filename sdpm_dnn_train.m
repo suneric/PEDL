@@ -4,15 +4,13 @@ clear;
 clc;
 
 %% set task type
-% lossType = "PgNN";
-lossType = "PiNN";
-% lossType = 'PcNN'; % combine data loss and physics loss
+lossType = "PgNN"; % PgNN, PcNN, PiNN, change alpha
 task = "predict_next";
 % task = "predict_arbitrary";
 seq_steps = 20;
 t_force_stop = 1;
 training_percent = 0.8;
-max_epochs = 56;
+max_epochs = 10;
 
 %% preprocess data for training
 % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
