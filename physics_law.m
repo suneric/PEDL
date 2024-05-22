@@ -8,22 +8,14 @@ function YF = physics_law(X)
     M1 = params(5);
     M2 = params(6);
 
-    N = size(X,2);
-    if isa(X,'single')
-        YF = zeros(2,N,'single');
-    else
-        YF = zeros(2,N,'single','gpuArray');
-    end
-    for i = 1:N
-        q1 = X(1,i);
-        q2 = X(2,i);
-        q1dot = X(3,i);
-        q2dot = X(4,i);
-        q1ddot = X(5,i);
-        q2ddot = X(6,i);
-        A = [M1+M2 M2*L*cos(q2); M2*L*cos(q2) M2*L*L];
-        B = [C*q1dot+M2*L*sin(q2)*q2dot*q2dot-K*q1; M2*G*L*sin(q2)];
-        % solve the Lagrange equation F = M*q_ddot + V*q_dot + G 
-        YF(:,i) = A*[q1ddot;q2ddot] + B;       
-    end
+    q1 = X(1,:);
+    q2 = X(2,:);
+    q1d = X(3,:);
+    q2d = X(4,:);
+    q1dd = X(5,:);
+    q2dd = X(6,:);
+
+    f1 = (M1+M2)*q1dd + M2*L*cos(q2).*q2dd + C*q1d + M2*L*sin(q2).*q2d.^2 - K*q1;
+    f2 = M2*L*cos(q2).*q1dd + M2*L*L*q2dd + M2*G*L*sin(q2);
+    YF = [f1;f2];
 end

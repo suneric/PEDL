@@ -4,13 +4,13 @@ clear;
 clc;
 
 %% set task type
-lossType = "PgNN"; % PgNN, PcNN, PiNN, change alpha
+lossType = "PcNN"; % PgNN, PcNN, PiNN, change alpha in myRegressionLayer.m
 task = "predict_next";
 % task = "predict_arbitrary";
 seq_steps = 20;
 t_force_stop = 1;
-training_percent = 0.8;
-max_epochs = 10;
+training_percent = 0.95;
+max_epochs = 12;
 
 %% preprocess data for training
 % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
@@ -95,3 +95,17 @@ options = trainingOptions("adam", ...
 fname = "model/"+lossType+"_model_"+num2str(num_samples)+".mat";
 save(fname,"net");
 disp(info)
+
+%% plot training loss and RMSE
+figure('Position',[500,100,800,400]); 
+tiledlayout("vertical","TileSpacing","tight")
+x = 1:5000;
+y = info.TrainingRMSE(x);
+% z = info.ValidationRMSE(x);
+smoothed_y = smoothdata(y,'gaussian');
+% smoothed_z = movmean(z, window_size);
+plot(x,y,'b-',x,smoothed_y,'r-',"LineWidth",2);
+xlabel("Iteration","FontName","Arial")
+ylabel("RMSE","FontName","Arial")
+legend("Original","Smoothed","location","best")
+set(gca, 'FontSize', 15);

@@ -4,12 +4,12 @@ clear;
 clc;
 
 %% set task type
-lossType = 'PgNN';
+lossType = 'all';
 task = "predict_next";
 % task = "predict_arbitrary";
 seq_steps = 20;
 tForceStop = 1;
-num_samples = 900;
+num_samples = 500;
 tSpan = [0,10];
 % strType = {'constant','increase','decrease'};
 ctrlOptions = control_options();

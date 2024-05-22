@@ -10,7 +10,7 @@ ctrlOptions = control_options();
 strType = {'constant','increase','decrease'};
 
 % simulate and save data
-num_samples = 600;
+num_samples = 400;
 samples = {};
 for i = 1:num_samples
     ctrlOptions.fMax = rand(2,1).*[10;0]; % random max forces
