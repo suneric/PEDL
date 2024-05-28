@@ -5,15 +5,14 @@ clc;
 
 %% set task type
 lossType = 'all';
-task = "predict_next";
-% task = "predict_arbitrary";
+task = "predict_arbitrary"; % "predict_next"; % "predict_arbitrary";
 seq_steps = 20;
 tForceStop = 1;
-num_samples = 500;
+num_samples = 1000;
 tSpan = [0,10];
 % strType = {'constant','increase','decrease'};
 ctrlOptions = control_options();
-ctrlOptions.fMax = [12;0];
+ctrlOptions.fMax = [8;0];
 %ctrlOptions.fType = strType{randi(numel(strType))};
 %ctrlOptions.fSpan = [0,randi([2,5])];
 
@@ -67,4 +66,5 @@ function plot_comparison(t,x,x_pgnn,x_pcnn,x_pinn)
             xlabel("Time (s)","Interpreter","latex","FontSize",20,"FontName","Arial");
         end
     end
+    legend("Reference","PgNN","PcNN","PiNN");
 end

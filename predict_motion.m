@@ -32,11 +32,13 @@ function x_pred = predict_arbitary_step(model,t,x,u,num_steps,tForceStop)
     x_pred = zeros(size,6);
     indices = find(t <= tForceStop);
     x_pred(indices,:) = x(indices,:);
-    randomIndices = sort(randperm(numel(indices),num_steps));
-    state = {[t(randomIndices),x_pred(randomIndices,:),u(randomIndices,:)]'};
+    initIdx = indices(end);
+    startIdx = initIdx-num_steps+1;
+    state = {[t(startIdx:initIdx),x_pred(startIdx:initIdx,:),u(startIdx:initIdx,:)]'};
     dsState = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
-    for i = indices(end)+1:size    
-        dsTime = arrayDatastore(t(i),'ReadSize',128);
+    t0 = t(initIdx);
+    for i = initIdx+1:size    
+        dsTime = arrayDatastore(t(i)-t0,'ReadSize',128);
         dsTest = combine(dsState, dsTime);
         x_pred(i,:) = predict(model,dsTest);
     end

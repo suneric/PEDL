@@ -4,13 +4,12 @@ clear;
 clc;
 
 %% set task type
-lossType = "PcNN"; % PgNN, PcNN, PiNN, change alpha in myRegressionLayer.m
-task = "predict_next";
-% task = "predict_arbitrary";
+lossType = "PiNN"; % PgNN, PcNN, PiNN, change alpha in myRegressionLayer.m
+task = "predict_arbitrary"; % "predict_next"; % "predict_arbitrary"
 seq_steps = 20;
 t_force_stop = 1;
 training_percent = 0.95;
-max_epochs = 12;
+max_epochs = 20;
 
 %% preprocess data for training
 % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
@@ -81,7 +80,7 @@ lgraph = connectLayers(lgraph,"time","cat/in2");
 % plot(lgraph);
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.0001, ...
+    InitialLearnRate=0.0002, ...
     MaxEpochs=max_epochs, ...
     SequencePaddingDirection="left", ...
     Shuffle='every-epoch', ...

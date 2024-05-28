@@ -21,11 +21,10 @@ classdef myRegressionLayer < nnet.layer.RegressionLayer ...
             % data loss: compute the difference between target and predicted values
             dataLoss = mean((T-Y).^2,'all');
             % physics loss
-            YF = physics_law(Y);
-            TF = physics_law(T);
-            physicLoss = mean((TF-YF).^2,'all');
+            f = physics_law(Y(1:2,:),Y(3:4,:),Y(5:6,:));
+            physicLoss = mean(f.^2,'all');
             % final loss, combining data loss and physics loss
-            alpha = 0.5;
+            alpha = 1.0;
             loss = (1.0-alpha)*dataLoss + alpha*physicLoss;
         end
 

@@ -5,15 +5,15 @@ clc;
 
 %% Generate Data for Training 
 % Mass-Spring-Damper-Pendulum Dynamics System Parameters
-tSpan = [0,5];
 ctrlOptions = control_options();
 strType = {'constant','increase','decrease'};
-
+tSpan = [0,5];
+maxF1 = 10;
 % simulate and save data
-num_samples = 400;
+num_samples = 500;
 samples = {};
 for i = 1:num_samples
-    ctrlOptions.fMax = rand(2,1).*[10;0]; % random max forces
+    ctrlOptions.fMax = rand(2,1).*[maxF1;0]; % random max forces
     % ctrlOptions.fType = strType{randi(numel(strType))};
     % ctrlOptions.fSpan = [0,randi([1,5])];
     y = sdpm_simulation(tSpan, ctrlOptions);

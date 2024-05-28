@@ -13,9 +13,27 @@ tTest = [1,10]; % prediction test time span
 ctrlOptions = control_options();
 disp("initialize parameters");
 
+%%
+maxForces = linspace(0.5,15,30);
+numSamples = [100,200,300,400,500,600,700,800,900];
+rmse_pgnn = zeros(1,length(numSamples));
+rmse_pcnn = zeros(1,length(numSamples));
+rmse_pinn = zeros(1,length(numSamples));
+for i = 1:length(numSamples)
+    errs = load_errs(numSamples(i),"PgNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
+    rmse_pgnn(1,i) = mean(errs,"all");
+    errs = load_errs(numSamples(i),"PcNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
+    rmse_pcnn(1,i) = mean(errs,"all");
+    errs = load_errs(numSamples(i),"PiNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
+    rmse_pinn(1,i) = mean(errs,"all");
+end
+plot_comparison(numSamples,rmse_pgnn,rmse_pcnn,rmse_pinn);
+disp("load data")
+
+%%
 best_pgnn = load("model/PgNN_model_500.mat").net;
-best_pcnn = load("model/PcNN_model_500.mat").net;
-best_pinn = load("model/PiNN_model_600.mat").net;
+best_pcnn = load("model/PcNN_model_700.mat").net;
+best_pinn = load("model/PiNN_model_800.mat").net;
 disp("load best models");
 
 %% plot accuracy pgnn and pinn each motion state comparison
@@ -138,7 +156,7 @@ set(gca, 'FontSize', 15);
 
 
 %% Single case prediction accuracy over specified time span
-ctrlOptions.fMax = [3;0];
+ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan, ctrlOptions);
 t = y(:,1);
 u = y(:,2:3);
@@ -146,7 +164,7 @@ x = y(:,4:9);
 x_pgnn = predict_motion(best_pgnn,t,x,u,seqSteps,tForceStop,task);
 x_pinn = predict_motion(best_pinn,t,x,u,seqSteps,tForceStop,task);
 
-tTest = [1,5];
+tTest = [5,10];
 indices = find(t >= tTest(1) & t <= tTest(end));
 pg_rse = root_square_err(indices,x,x_pgnn);
 pi_rse = root_square_err(indices,x,x_pinn);
@@ -177,23 +195,6 @@ for i = 1:6
     set(gca, 'FontSize', 15);
     set(gca, 'FontName', "Arial");
 end 
-
-
-%%
-numSamples = [100,200,300,400,500,600,700,800,900];
-rmse_pgnn = zeros(1,length(numSamples));
-rmse_pcnn = zeros(1,length(numSamples));
-rmse_pinn = zeros(1,length(numSamples));
-for i = 1:length(numSamples)
-    errs = load_errs(numSamples(i),"PgNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
-    rmse_pgnn(1,i) = mean(errs,"all");
-    errs = load_errs(numSamples(i),"PcNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
-    rmse_pcnn(1,i) = mean(errs,"all");
-    errs = load_errs(numSamples(i),"PiNN",maxForces,ctrlOptions,seqSteps,tForceStop,tTest,tSpan,task);
-    rmse_pinn(1,i) = mean(errs,"all");
-end
-plot_comparison(numSamples,rmse_pgnn,rmse_pcnn,rmse_pinn);
-disp("load data")
 
 %%
 function plot_comparison(numSamples,err_pgnn,err_pcnn,err_pinn)
