@@ -4,7 +4,7 @@ function plot_states(t,x,x_pred,lossType)
     labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$","$\ddot{q}_1$","$\ddot{q}_2$"];
     figure('Position',[500,100,800,800]);
     tiledlayout("vertical","TileSpacing","tight")
-    numState = size(x_pred);
+    numState = size(x);
     numState = numState(2);
     for i = 1:numState
         nexttile

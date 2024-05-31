@@ -5,7 +5,7 @@ clc;
 
 %% set task type
 lossType = "PiNN"; % PgNN, PcNN, PiNN, change alpha in myRegressionLayer.m
-task = "predict_arbitrary"; % "predict_next"; % "predict_arbitrary"
+task = "predict_next"; % "predict_arbitrary"
 seq_steps = 20;
 t_force_stop = 1;
 training_percent = 0.95;

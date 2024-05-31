@@ -69,7 +69,7 @@ xTrain = dlarray(xTrain,'CB');
 yTrain = dlarray(yTrain,'CB');
 
 % training options
-numEpochs = 5000;
+numEpochs = 1000;
 solverState = lbfgsState; 
 % create a function handle containing the loss for the L-BFGS update, and 
 % use 'dlfeval' to evaluate the 'dlgradient' inside the modelLoss function 
