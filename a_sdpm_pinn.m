@@ -138,7 +138,7 @@ plot_compared_states(t,x,t,xp)
 tForceStop = 1;
 predictTime = 3;
 net = load("pinn_model.mat").net;
-ctrlOptions.fMax = [7;0];
+ctrlOptions.fMax = [6;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:7);
@@ -167,6 +167,8 @@ net = load("pinn_model.mat").net;
 ctrlOptions.fMax = [8;0];
 tSpan = [0,10];
 tForceStop = 1;
+dTime = 0.01;
+
 tic;
 y = sdpm_simulation(tSpan, ctrlOptions);
 t_ode = toc;
@@ -175,7 +177,6 @@ x = y(:,4:7);
 indices = find(t <= tForceStop);
 initIdx = indices(end);
 % predict with fixed time step
-dTime = 0.01;
 tPred = tForceStop+dTime:dTime:tSpan(end);
 tp = zeros(length(tPred),1);
 xp = zeros(length(tPred),4);
@@ -195,27 +196,23 @@ plot_compared_states(t,x,tp,xp)
 
 %% Test 4
 % predict with small time interval from 1s to 5s
-tForceStop = 1;
-predictTime = 2;
-dTime = 0.01;
 net = load("pinn_model.mat").net;
-ctrlOptions.fMax = [6;0];
+ctrlOptions.fMax = [8;0];
+tForceStop = 1;
+predictTime = 3; % time interval of prediction
+dTime = 0.1; % time step of prediction
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:7);
-numTime = length(t);
 indices = find(t <= tForceStop);
 initIdx = indices(end);
-
+% predict with fixed time step
 tPred = tForceStop+dTime:dTime:tSpan(end);
 tp = zeros(length(tPred),1);
 xp = zeros(length(tPred),4);
 x0 = x(initIdx,:);
 t0 = t(initIdx);
-
 % prediction
-xp = zeros(numTime,4);
-xp(1:initIdx,:) = x(1:initIdx,:);
 for i = 1:length(tPred)
     tp(i) = tPred(i);
     xInit = dlarray([x0,tPred(i)-t0]','CB');
@@ -227,6 +224,62 @@ for i = 1:length(tPred)
     end
 end
 plot_compared_states(t,x,tp,xp)
+
+%% Accuracy evluation
+net = load("pinn_model.mat").net;
+tForceStop = 1;
+predictTime = 3;
+numCase = 30;
+numTime = 15;
+refTime = linspace(1,10,numTime);
+maxForces = linspace(0.5,15,numCase);
+errs = zeros(4*numCase,numTime);
+
+for i = 1:numCase
+    % reference
+    ctrlOptions.fMax = [maxForces(i);0];
+    y = sdpm_simulation(tSpan, ctrlOptions);
+    t = y(:,1);
+    x = y(:,4:7);
+    % prediction
+    indices = find(t <= tForceStop);
+    initIdx = indices(end);
+    xp = zeros(length(t),4);
+    xp(1:initIdx,:) = x(1:initIdx,:);
+    x0 = x(initIdx,:);
+    t0 = t(initIdx);
+    for j = initIdx+1:length(t)
+        xInit = dlarray([x0,t(j)-t0]','CB');
+        xPred = predict(net,xInit);
+        xp(j,:) = extractdata(xPred);
+        if (t(j)-t0 > predictTime)
+            t0 = t(j-1);
+            x0 = xp(j-1,:);
+        end
+    end
+    % test points
+    tTestIndices = zeros(1,numTime);
+    for k = 1:numTime
+        indices = find(t<=refTime(k));
+        tTestIndices(1,k) = indices(end);
+    end
+    rmseErr = root_square_err(tTestIndices,x,xp);
+    idx = 4*(i-1);
+    errs(idx+1,:) = rmseErr(1,:);
+    errs(idx+2,:) = rmseErr(2,:);
+    errs(idx+3,:) = rmseErr(3,:);
+    errs(idx+4,:) = rmseErr(4,:);
+end
+disp(["model rmse",mean(errs,1)])
+
+disp("plot time step rsme")
+figure('Position',[500,100,800,300]); 
+tiledlayout("vertical","TileSpacing","tight")
+plot(refTime,mean(errs,1),'k-','LineWidth',2);
+xlabel("Time (s)","FontName","Arial");
+ylabel("Average RMSE","FontName","Arial");
+xticks([1,2,3,4,5,6,7,8,9,10]);
+set(gca, 'FontSize', 15);
 
 %% loss function
 function [loss, gradients] = modelLoss(net,X,T)
@@ -256,6 +309,20 @@ function [loss, gradients] = modelLoss(net,X,T)
     gradients = dlgradient(loss, net.Learnables);
 end
 
+% root square error of prediction and reference
+function rse = root_square_err(indices,x,xPred)
+    numPoints = length(indices);
+    x_size = size(xPred);
+    errs = zeros(x_size(2),numPoints);
+    for i = 1:numPoints
+        for j = 1:x_size(2)
+            errs(j,i) = x(indices(i),j)-xPred(indices(i),j);
+        end
+    end
+    rse = sqrt(errs.^2);
+end
+
+% plot comparison
 function plot_compared_states(t,x,tp,xp)
     labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$"];
     figure('Position',[500,100,800,800]);
