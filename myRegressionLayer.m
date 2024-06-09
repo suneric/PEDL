@@ -24,8 +24,8 @@ classdef myRegressionLayer < nnet.layer.RegressionLayer ...
             f = physics_law(Y(1:2,:),Y(3:4,:),Y(5:6,:));
             physicLoss = mean(f.^2,'all');
             % final loss, combining data loss and physics loss
-            alpha = 1.0;
-            loss = (1.0-alpha)*dataLoss + alpha*physicLoss;
+            ctrlOptions = control_options();
+            loss = (1.0-ctrlOptions.alpha)*dataLoss + ctrlOptions.alpha*physicLoss;
         end
 
         function dLdY = backwardLoss(layer,Y,T)

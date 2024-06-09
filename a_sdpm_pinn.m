@@ -16,15 +16,20 @@ clc;
 
 %% settings
 tSpan = [0,10];
+tForceStop = 1;
 ctrlOptions = control_options();
+
+ds = load('trainingData.mat');
+numSamples = length(ds.samples);
+modelFile = "model/pinn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
+maxEpochs = 5000;
 
 %% generate data
 % Feature data: 4-D initial state x0 + time interval
 % the label data is a predicted state x=[q1,q2,q1dot,q2dot]
 xTrain = [];
 yTrain = [];
-ds = load('trainingData.mat');
-for i = 1:length(ds.samples)
+for i = 1:numSamples
     data = load(ds.samples{i,1}).state;
     t = data(1,:);
     x = data(4:7,:); % q1,q2,q1_dot,q2_dot
@@ -43,57 +48,81 @@ end
 disp([num2str(length(xTrain)),' samples are generated for training.'])
 
 %% make dnn and train 
-numState = 4; % q1,q2,q1dot,q2dot
-numLayers = 4;
-numNeurons = 128;
-layers = featureInputLayer(numState+1);
-for i = 1:numLayers-1
-    layers = [
-        layers
-        fullyConnectedLayer(numNeurons)
-        tanhLayer];
-end
+numStates = 4; % q1,q2,q1dot,q2dot
 layers = [
-    layers
-    fullyConnectedLayer(numState)];
+    featureInputLayer(numStates+1)
+    fullyConnectedLayer(128)
+    tanhLayer
+    fullyConnectedLayer(128)
+    tanhLayer
+    fullyConnectedLayer(128)
+    tanhLayer
+    fullyConnectedLayer(numStates)];
 
 % convert the layer array to a dlnetwork object
 net = dlnetwork(layers);
-disp(net); 
+% disp(net); 
 % plot(net)
-net = dlupdate(@double,net); % for better accuracy
-
-% convert training data to formated dlarray
-% 'C', channel, 'B', batch
-xTrain = dlarray(xTrain,'CB'); 
-yTrain = dlarray(yTrain,'CB');
 
 % training options
-numEpochs = 1000;
-solverState = lbfgsState; 
-% create a function handle containing the loss for the L-BFGS update, and 
-% use 'dlfeval' to evaluate the 'dlgradient' inside the modelLoss function 
-% using automatic differentiation. 
-accfun = dlaccelerate(@modelLoss);
-lossFcn = @(net) dlfeval(accfun,net,xTrain,yTrain);
-
 monitor = trainingProgressMonitor;
 monitor.Metrics = "TrainingLoss";
-monitor.Info = ["LearningRate","Epoch","Iteration"];
+monitor.Info = ["IterationPerEpoch","MaximumIteration","Epoch","Iteration",];
 monitor.XLabel = "Epoch";
 
 % Train the model using custom training loop
 % Use the full data set at each iteration. Update the network learnable
 % parameters and solver state using 'lbfgsupdate', at the end of each
 % iteration, update the training progress monitor.
-for i = 1:numEpochs
+% create a function handle containing the loss for the L-BFGS update, and 
+% use 'dlfeval' to evaluate the 'dlgradient' inside the modelLoss function 
+% using automatic differentiation. 
+net = dlupdate(@double,net); % for better accuracy
+xTrain = dlarray(xTrain,'CB'); 
+yTrain = dlarray(yTrain,'CB');
+accfun = dlaccelerate(@modelLoss);
+lossFcn = @(net) dlfeval(accfun,net,xTrain,yTrain);
+solverState = lbfgsState; 
+for i = 1:maxEpochs
     [net,solverState] = lbfgsupdate(net,lossFcn,solverState);
     updateInfo(monitor,Epoch=i);
     recordMetrics(monitor,i,TrainingLoss = solverState.Loss);
 end
 
-fname = "pinn_model.mat";
-save(fname,"net");
+% using stochastic gradient decent
+% miniBatchSize = 128;
+% totalSize = length(yTrain);
+% numIterationsPerEpoch = floor(totalSize/miniBatchSize);
+% numIterations = maxEpochs * numIterationsPerEpoch;
+% vel = [];
+% iter = 0;
+% for i = 1:maxEpochs
+%     % Shuffle data.
+%     idx = randperm(totalSize);
+%     xTrain = xTrain(:,idx);
+%     yTrain = yTrain(:,idx);
+%     for batchStart = 1:miniBatchSize:totalSize
+%         iter  = iter + 1;
+%         batchIndices = batchStart:min(batchStart+miniBatchSize-1, totalSize);
+%         X = xTrain(:,batchIndices);
+%         T = yTrain(:,batchIndices); 
+%         X = dlarray(X,"CB");
+%         T = dlarray(T,"CB");
+%         if canUseGPU
+%            X = gpuArray(X);
+%            T = gpuArray(T);
+%         end
+% 
+%         % Evaluate the model loss and gradients using dlfeval and the
+%         % modelLoss function.
+%         [loss,gradients] = dlfeval(@modelLoss,net,X,T);
+%         % Update the network parameters using the SGDM optimizer.
+%         [net,vel] = sgdmupdate(net,gradients,vel);
+%         updateInfo(monitor,Epoch=i,Iteration=iter,MaximumIteration=numIterations,IterationPerEpoch=numIterationsPerEpoch);
+%         recordMetrics(monitor,iter,TrainingLoss=loss);
+%     end
+% end
+save(modelFile,"net");
 
 %% plot training loss and RMSE
 figure('Position',[500,100,800,400]); 
@@ -111,10 +140,8 @@ legend("Original","Smoothed","location","best")
 set(gca, 'FontSize', 15);
 
 %% Test 1
-% simulation with different tForceStop
-tForceStop = 1;
-net = load("pinn_model.mat").net;
-ctrlOptions.fMax = [6;0];
+net = load(modelFile).net;
+ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:7);
@@ -135,10 +162,9 @@ plot_compared_states(t,x,t,xp)
 
 %% Test 2
 % simulation with small time interval
-tForceStop = 1;
 predictTime = 3;
-net = load("pinn_model.mat").net;
-ctrlOptions.fMax = [6;0];
+net = load(modelFile).net;
+ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:7);
@@ -163,12 +189,11 @@ plot_compared_states(t,x,t,xp)
 
 %% Test 3 
 % simulation with small time step
-net = load("pinn_model.mat").net;
+net = load(modelFile).net;
 ctrlOptions.fMax = [8;0];
 tSpan = [0,10];
 tForceStop = 1;
 dTime = 0.01;
-
 tic;
 y = sdpm_simulation(tSpan, ctrlOptions);
 t_ode = toc;
@@ -196,11 +221,11 @@ plot_compared_states(t,x,tp,xp)
 
 %% Test 4
 % predict with small time interval from 1s to 5s
-net = load("pinn_model.mat").net;
-ctrlOptions.fMax = [8;0];
+net = load(modelFile).net;
+ctrlOptions.fMax = [4;0];
 tForceStop = 1;
 predictTime = 3; % time interval of prediction
-dTime = 0.1; % time step of prediction
+dTime = 0.01; % time step of prediction
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:7);
@@ -224,62 +249,6 @@ for i = 1:length(tPred)
     end
 end
 plot_compared_states(t,x,tp,xp)
-
-%% Accuracy evluation
-net = load("pinn_model.mat").net;
-tForceStop = 1;
-predictTime = 3;
-numCase = 30;
-numTime = 15;
-refTime = linspace(1,10,numTime);
-maxForces = linspace(0.5,15,numCase);
-errs = zeros(4*numCase,numTime);
-
-for i = 1:numCase
-    % reference
-    ctrlOptions.fMax = [maxForces(i);0];
-    y = sdpm_simulation(tSpan, ctrlOptions);
-    t = y(:,1);
-    x = y(:,4:7);
-    % prediction
-    indices = find(t <= tForceStop);
-    initIdx = indices(end);
-    xp = zeros(length(t),4);
-    xp(1:initIdx,:) = x(1:initIdx,:);
-    x0 = x(initIdx,:);
-    t0 = t(initIdx);
-    for j = initIdx+1:length(t)
-        xInit = dlarray([x0,t(j)-t0]','CB');
-        xPred = predict(net,xInit);
-        xp(j,:) = extractdata(xPred);
-        if (t(j)-t0 > predictTime)
-            t0 = t(j-1);
-            x0 = xp(j-1,:);
-        end
-    end
-    % test points
-    tTestIndices = zeros(1,numTime);
-    for k = 1:numTime
-        indices = find(t<=refTime(k));
-        tTestIndices(1,k) = indices(end);
-    end
-    rmseErr = root_square_err(tTestIndices,x,xp);
-    idx = 4*(i-1);
-    errs(idx+1,:) = rmseErr(1,:);
-    errs(idx+2,:) = rmseErr(2,:);
-    errs(idx+3,:) = rmseErr(3,:);
-    errs(idx+4,:) = rmseErr(4,:);
-end
-disp(["model rmse",mean(errs,1)])
-
-disp("plot time step rsme")
-figure('Position',[500,100,800,300]); 
-tiledlayout("vertical","TileSpacing","tight")
-plot(refTime,mean(errs,1),'k-','LineWidth',2);
-xlabel("Time (s)","FontName","Arial");
-ylabel("Average RMSE","FontName","Arial");
-xticks([1,2,3,4,5,6,7,8,9,10]);
-set(gca, 'FontSize', 15);
 
 %% loss function
 function [loss, gradients] = modelLoss(net,X,T)
@@ -305,42 +274,7 @@ function [loss, gradients] = modelLoss(net,X,T)
     physicLoss = l2loss(f,zeroTarget);
     
     % total loss
-    loss = dataLoss + physicLoss;
+    ctrlOptions = control_options();
+    loss = (1.0-ctrlOptions.alpha)*dataLoss + ctrlOptions.alpha*physicLoss;
     gradients = dlgradient(loss, net.Learnables);
-end
-
-% root square error of prediction and reference
-function rse = root_square_err(indices,x,xPred)
-    numPoints = length(indices);
-    x_size = size(xPred);
-    errs = zeros(x_size(2),numPoints);
-    for i = 1:numPoints
-        for j = 1:x_size(2)
-            errs(j,i) = x(indices(i),j)-xPred(indices(i),j);
-        end
-    end
-    rse = sqrt(errs.^2);
-end
-
-% plot comparison
-function plot_compared_states(t,x,tp,xp)
-    labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$"];
-    figure('Position',[500,100,800,800]);
-    tiledlayout("vertical","TileSpacing","tight")
-    numState = size(xp);
-    numState = numState(2);
-    for i = 1:numState
-        nexttile
-        plot(t,x(:,i),'b-',tp,xp(:,i),'r--','LineWidth',2);
-        hold on
-        xline(1,'k--', 'LineWidth',1);
-        ylabel(labels(i),"Interpreter","latex");
-        set(get(gca,'ylabel'),'rotation',0);
-        set(gca, 'FontSize', 15);
-        set(gca, 'FontName', "Arial")
-        if i == numState
-            xlabel("Time (s)");
-        end
-    end 
-    legend("Reference","Prediction","Location","best","FontName","Arial");
 end
