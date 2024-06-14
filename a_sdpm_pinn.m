@@ -22,7 +22,7 @@ ctrlOptions = control_options();
 ds = load('trainingData.mat');
 numSamples = length(ds.samples);
 modelFile = "model/pinn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
-maxEpochs = 5000;
+maxEpochs = 20;
 
 %% generate data
 % Feature data: 4-D initial state x0 + time interval
@@ -66,8 +66,8 @@ net = dlnetwork(layers);
 
 % training options
 monitor = trainingProgressMonitor;
-monitor.Metrics = "TrainingLoss";
-monitor.Info = ["IterationPerEpoch","MaximumIteration","Epoch","Iteration",];
+monitor.Metrics = "Loss";
+monitor.Info = ["LearnRate","IterationPerEpoch","MaximumIteration","Epoch","Iteration"];
 monitor.XLabel = "Epoch";
 
 % Train the model using custom training loop
@@ -77,51 +77,52 @@ monitor.XLabel = "Epoch";
 % create a function handle containing the loss for the L-BFGS update, and 
 % use 'dlfeval' to evaluate the 'dlgradient' inside the modelLoss function 
 % using automatic differentiation. 
-net = dlupdate(@double,net); % for better accuracy
-xTrain = dlarray(xTrain,'CB'); 
-yTrain = dlarray(yTrain,'CB');
-accfun = dlaccelerate(@modelLoss);
-lossFcn = @(net) dlfeval(accfun,net,xTrain,yTrain);
-solverState = lbfgsState; 
-for i = 1:maxEpochs
-    [net,solverState] = lbfgsupdate(net,lossFcn,solverState);
-    updateInfo(monitor,Epoch=i);
-    recordMetrics(monitor,i,TrainingLoss = solverState.Loss);
-end
+% net = dlupdate(@double,net); % for better accuracy
+% xTrain = dlarray(xTrain,'CB'); 
+% yTrain = dlarray(yTrain,'CB');
+% accfun = dlaccelerate(@modelLoss);
+% lossFcn = @(net) dlfeval(accfun,net,xTrain,yTrain);
+% solverState = lbfgsState; 
+% for i = 1:maxEpochs
+%     [net,solverState] = lbfgsupdate(net,lossFcn,solverState);
+%     updateInfo(monitor,Epoch=i);
+%     recordMetrics(monitor,i,TrainingLoss = solverState.Loss);
+% end
 
 % using stochastic gradient decent
-% miniBatchSize = 128;
-% totalSize = length(yTrain);
-% numIterationsPerEpoch = floor(totalSize/miniBatchSize);
-% numIterations = maxEpochs * numIterationsPerEpoch;
-% vel = [];
-% iter = 0;
-% for i = 1:maxEpochs
-%     % Shuffle data.
-%     idx = randperm(totalSize);
-%     xTrain = xTrain(:,idx);
-%     yTrain = yTrain(:,idx);
-%     for batchStart = 1:miniBatchSize:totalSize
-%         iter  = iter + 1;
-%         batchIndices = batchStart:min(batchStart+miniBatchSize-1, totalSize);
-%         X = xTrain(:,batchIndices);
-%         T = yTrain(:,batchIndices); 
-%         X = dlarray(X,"CB");
-%         T = dlarray(T,"CB");
-%         if canUseGPU
-%            X = gpuArray(X);
-%            T = gpuArray(T);
-%         end
-% 
-%         % Evaluate the model loss and gradients using dlfeval and the
-%         % modelLoss function.
-%         [loss,gradients] = dlfeval(@modelLoss,net,X,T);
-%         % Update the network parameters using the SGDM optimizer.
-%         [net,vel] = sgdmupdate(net,gradients,vel);
-%         updateInfo(monitor,Epoch=i,Iteration=iter,MaximumIteration=numIterations,IterationPerEpoch=numIterationsPerEpoch);
-%         recordMetrics(monitor,iter,TrainingLoss=loss);
-%     end
-% end
+miniBatchSize = 128;
+learnRate = 0.001;
+momentum = 0.9;
+dataSize = size(yTrain,2);
+numBatches = floor(dataSize/miniBatchSize);
+numIterations = maxEpochs * numBatches;
+vel = [];
+iter = 0;
+for i = 1:maxEpochs
+    % Shuffle data.
+    idx = randperm(dataSize);
+    xTrain = xTrain(:,idx);
+    yTrain = yTrain(:,idx);
+    for j=1:numBatches
+        iter  = iter + 1;
+        startIdx = (j-1)*miniBatchSize+1;
+        endIdx = min(j*miniBatchSize, dataSize);
+        xBatch = xTrain(:,startIdx:endIdx);
+        yBatch = yTrain(:,startIdx:endIdx); 
+        X = gpuArray(dlarray(xBatch,"CB"));
+        T = gpuArray(dlarray(yBatch,"CB"));
+        % Evaluate the model loss and gradients using dlfeval and the
+        % modelLoss function.
+        [loss,gradients,state] = dlfeval(@modelLoss,net,X,T);
+        net.State = state;
+        % Update the network parameters using the SGDM optimizer.
+        [net,vel] = sgdmupdate(net,gradients,vel,learnRate,momentum);
+        recordMetrics(monitor,iter,Loss=loss);
+        updateInfo(monitor,LearnRate=learnRate,Epoch=i,Iteration=iter,MaximumIteration=numIterations,IterationPerEpoch=numBatches);
+        monitor.Progress = 100*iter/numIterations;
+        
+    end
+end
 save(modelFile,"net");
 
 %% plot training loss and RMSE
@@ -135,7 +136,7 @@ smoothed_y = smoothdata(y,'gaussian');
 % smoothed_z = movmean(z, window_size);
 plot(x,y,'b-',x,smoothed_y,'r-',"LineWidth",2);
 xlabel("Iteration","FontName","Arial")
-ylabel("TrainingLoss","FontName","Arial")
+ylabel("Loss","FontName","Arial")
 legend("Original","Smoothed","location","best")
 set(gca, 'FontSize', 15);
 
@@ -251,9 +252,9 @@ end
 plot_compared_states(t,x,tp,xp)
 
 %% loss function
-function [loss, gradients] = modelLoss(net,X,T)
+function [loss, gradients, state] = modelLoss(net,X,T)
     % make prediction
-    Y = forward(net,X);
+    [Y, state] = forward(net,X);
     dataLoss = l2loss(Y,T);
     
     % compute gradients using automatic differentiation

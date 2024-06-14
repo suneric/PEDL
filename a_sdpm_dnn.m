@@ -72,15 +72,15 @@ save(modelFile,"net");
 %% plot training loss and RMSE
 figure('Position',[500,100,800,400]); 
 tiledlayout("vertical","TileSpacing","tight")
-numIter = length(info.TrainingRMSE);
+numIter = length(info.TrainingLoss);
 x = 1:numIter;
-y = info.TrainingRMSE(x);
+y = info.TrainingLoss(x);
 % z = info.ValidationRMSE(x);
 smoothed_y = smoothdata(y,'gaussian');
 % smoothed_z = movmean(z, window_size);
 plot(x,y,'b-',x,smoothed_y,'r-',"LineWidth",2);
 xlabel("Iteration","FontName","Arial")
-ylabel("RMSE","FontName","Arial")
+ylabel("Loss","FontName","Arial")
 legend("Original","Smoothed","location","best")
 set(gca, 'FontSize', 15);
 
