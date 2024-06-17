@@ -22,7 +22,7 @@ ctrlOptions = control_options();
 ds = load('trainingData.mat');
 numSamples = length(ds.samples);
 modelFile = "model/pinn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
-maxEpochs = 20;
+maxEpochs = 50;
 
 %% generate data
 % Feature data: 4-D initial state x0 + time interval
@@ -91,7 +91,7 @@ monitor.XLabel = "Epoch";
 
 % using stochastic gradient decent
 miniBatchSize = 128;
-learnRate = 0.001;
+learnRate = 0.0001;
 momentum = 0.9;
 dataSize = size(yTrain,2);
 numBatches = floor(dataSize/miniBatchSize);
@@ -128,7 +128,7 @@ save(modelFile,"net");
 %% plot training loss and RMSE
 figure('Position',[500,100,800,400]); 
 tiledlayout("vertical","TileSpacing","tight")
-info = monitor.MetricData.TrainingLoss;
+info = monitor.MetricData.Loss;
 x = info(:,1);
 y = info(:,2);
 % z = info.ValidationRMSE(x);
