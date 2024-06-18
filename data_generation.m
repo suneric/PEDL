@@ -23,7 +23,7 @@ for i = 1:num_samples
     save(fname, 'state');
     samples{end+1} = fname;
     % plot_states(y(:,1),y(:,4:9));
-    %plot_forces(y(:,1),y(:,2),y(:,10));
+    % plot_forces(y(:,1),y(:,2),y(:,10));
 end
 samples = reshape(samples,[],1); % make it row-based
 save('trainingData.mat','samples');

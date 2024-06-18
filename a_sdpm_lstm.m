@@ -5,17 +5,18 @@ clc;
 
 %% set task type
 tSpan = [0,10];
-seqSteps = 20;
+seqSteps = 10;
 tForceStop = 1;
 ctrlOptions = control_options();
 
 ds = load('trainingData.mat');
 numSamples = size(ds.samples,1);
 modelFile = "model/lstm_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
-maxEpochs = 20;
+maxEpochs = 50;
 
 %% preprocess data for training
 % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
+initTimes = 1:4; %start from 1 sec to 4 sec with 0.5 sec step 
 states = {};
 times = [];
 labels = [];
@@ -23,14 +24,12 @@ for i=1:numSamples
     data = load(ds.samples{i,1}).state;
     t = data(1,:);
     x = data(4:9,:);
-    numTime = length(t);
-    for tInit = 1:4 % sample from 1 to 4 second
-        indices = find(t <= tInit);
-        initIdx = indices(end);
+    for tInit = initTimes
+        initIdx = find(t >= tInit, 1, 'first');
         startIdx = initIdx-seqSteps+1;
         t0 = t(initIdx);
-        x0 = [t(1,startIdx:initIdx);x(:,startIdx:initIdx)];
-        for j=initIdx+1:numTime
+        x0 = [t(startIdx:initIdx);x(:,startIdx:initIdx)];
+        for j=initIdx+1:length(t)
             states{end+1} = x0;
             times = [times,t(j)-t0];
             labels = [labels,x(:,j)];
@@ -62,28 +61,32 @@ numOutput = 6; % the 6-dim states of the predicted time step
 
 layers = [
     sequenceInputLayer(numFeatures)
-    lstmLayer(64,OutputMode="last")
-    fullyConnectedLayer(128)
-    tanhLayer
+    lstmLayer(32,OutputMode="last")
     concatenationLayer(1,2,Name="cat")
+    fullyConnectedLayer(256)
+    reluLayer
     fullyConnectedLayer(128)
-    tanhLayer
+    reluLayer
+    dropoutLayer(0.2)
+    fullyConnectedLayer(128)
+    reluLayer
+    fullyConnectedLayer(64)
+    reluLayer
     fullyConnectedLayer(numOutput)
     myRegressionLayer("mse")];
 lgraph = layerGraph(layers);
 lgraph = addLayers(lgraph,[...
-    featureInputLayer(numTime)...
-    fullyConnectedLayer(16,Name="time")]);
+    featureInputLayer(numTime,Name="time")]);
 lgraph = connectLayers(lgraph,"time","cat/in2");
 % plot(lgraph);
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.001, ...
+    InitialLearnRate=0.0001, ...
     MaxEpochs=maxEpochs, ...
     SequencePaddingDirection="left", ...
     Shuffle='every-epoch', ...
     Plots='training-progress', ...
-    MiniBatchSize=128, ...
+    MiniBatchSize=200, ...
     Verbose=1);
 
 % training with data store
@@ -112,49 +115,41 @@ ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
-numTime = length(t);
-xp = zeros(numTime,6);
-indices = find(t <= tForceStop);
-xp(indices,:) = x(indices,:);
-initIdx = indices(end);
-startIdx = initIdx-seqSteps+1;
-state = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
-dsState = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
-for i = initIdx+1:numTime  
-    dsTime = arrayDatastore(t(i)-t0,'ReadSize',128);
-    dsTest = combine(dsState, dsTime);
-    xp(i,:) = predict(net,dsTest);
+startIdx = initIdx-seqSteps+1;
+state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+tp = t(initIdx+1:end);
+xp = zeros(length(tp),6);
+for i = 1:length(tp) 
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',128)));
 end
-plot_compared_states(t,x,t,xp)
+plot_compared_states(t,x,tp,xp)
 
 %% Test 2
 % simulation with small time interval
-predictTime = 3;
+predInterval = 3;
 net = load(modelFile).net;
 ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
-numTime = length(t);
-xp = zeros(numTime,6);
-indices = find(t <= tForceStop);
-xp(indices,:) = x(indices,:);
-initIdx = indices(end);
-startIdx = initIdx-seqSteps+1;
+initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
-state = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
-dsState = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
-for i = initIdx+1:numTime
-    dsTime = arrayDatastore(t(i)-t0,'ReadSize',128);
-    dsTest = combine(dsState, dsTime);
-    xp(i,:) = predict(net,dsTest);
-    if (t(i)-t0) >= predictTime
+startIdx = initIdx-seqSteps+1;
+state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+tp = t(initIdx+1:end);
+xp = zeros(length(tp),6);
+for i = 1:length(tp) 
+    if (tp(i)-t0) >= predInterval
+        t0 = tp(i-1);
         initIdx = i-1;
         startIdx = initIdx-seqSteps+1;
-        t0 = t(initIdx);
-        state = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
-        dsState = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+        state = {[tp(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
+        x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
     end
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',128)));
 end
-plot_compared_states(t,x,t,xp)
+plot_compared_states(t,x,tp,xp)

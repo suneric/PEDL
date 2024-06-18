@@ -5,17 +5,17 @@ clc;
 disp("clear and start the program")
 
 %% set task type
-seqSteps = 20;
+seqSteps = 10;
 tForceStop = 1;% time stop force
 tSpan = [0,10]; % simulation time span
 ctrlOptions = control_options();
 disp("initialize parameters");
 
-modelType = "pinn"; % "dnn", "pinn", "lstm"
+modelType = "lstm"; % "dnn", "pinn", "lstm"
 numSamples = 200;
 modelFile = "model/"+modelType+"_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 net = load(modelFile).net;
-predictTime = 3;
+predInterval = 3;
 
 %% Single case prediction accuracy over specified time span
 ctrlOptions.fMax = [8;0];
@@ -55,7 +55,7 @@ end
 %% Prediction Accuracy evluation
 % evaluate the model with specified forces, and time steps
 numCase = 30;
-numTime = 30;
+numTime = 100;
 refTime = linspace(1,10,numTime);
 maxForces = linspace(0.5,15,numCase);
 errs = zeros(4*numCase,numTime);
@@ -65,7 +65,7 @@ for i = 1:numCase
     y = sdpm_simulation(tSpan, ctrlOptions);
     t = y(:,1);
     x = y(:,4:9);
-    xp = predict_motion(net,modelType,t,x,predictTime,seqSteps,tForceStop);
+    xp = predict_motion(net,modelType,t,x,predInterval,seqSteps,tForceStop);
     % test points
     tTestIndices = zeros(1,numTime);
     for k = 1:numTime
@@ -110,46 +110,45 @@ t_dlm = toc;
 disp(["ode",t_ode,"dlm",t_dlm]);
 
 %% supporting functions
-function xp = predict_motion(net,type,t,x,predictTime,seqSteps,tForceStop)
+function xp = predict_motion(net,type,t,x,predInterval,seqSteps,tForceStop)
     % prediction
     numTime = length(t);
-    indices = find(t <= tForceStop);
-    initIdx = indices(end);
+    initIdx = find(t >= tForceStop,1,'first');
     xp = zeros(numTime,6);
-    xp(indices,:) = x(indices,:);
+    xp(1:initIdx,:) = x(1:initIdx,:);
     switch type
         case "dnn"
             x0 = x(initIdx,:);
             t0 = t(initIdx);
             for i = initIdx+1:numTime
-                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
-                if (t(i)-t0) > predictTime
+                if (t(i)-t0) > predInterval
                     t0 = t(i-1);
                     x0 = xp(i-1,:);
                 end
+                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
             end
         case "lstm"
             startIdx = initIdx-seqSteps+1;
             x0 = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
             t0 = t(initIdx);
-            for i = initIdx+1:numTime
-                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
-                if (t(i)-t0) >= predictTime
+            for i = initIdx+1:numTime          
+                if (t(i)-t0) >= predInterval
                     initIdx = i-1;
                     startIdx = initIdx-seqSteps+1;
                     x0 = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
                     t0 = t(initIdx);
                 end
+                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
             end
         case "pinn"
             x0 = x(initIdx,:);
             t0 = t(initIdx);
             for i = initIdx+1:numTime
-                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
-                if (t(i)-t0 > predictTime)
+                if (t(i)-t0 > predInterval)
                     t0 = t(i-1);
                     x0 = xp(i-1,:);
                 end
+                xp(i,:) = predict_step_state(net,type,x0,t(i)-t0);
             end
         otherwise
             disp("unsupport type model");

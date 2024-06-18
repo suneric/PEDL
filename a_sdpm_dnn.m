@@ -14,24 +14,23 @@ ctrlOptions = control_options();
 ds = load('trainingData.mat');
 numSamples = length(ds.samples);
 modelFile = "model/dnn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
-maxEpochs = 20;
+maxEpochs = 50;
 
 %% generate data
 % Feature data: 6-D initial state x0 + time interval
 % the label data is a predicted state x=[q1,q2,q1dot,q2dot,q1ddot,q2ddot]
+initTimes = 1:4; %start from 1 sec to 4 sec with 0.5 sec step 
 xTrain = [];
 yTrain = [];
 for i = 1:numSamples
     data = load(ds.samples{i,1}).state;
     t = data(1,:);
     x = data(4:9,:); % q1,q2,q1_dot,q2_dot
-    numTime = length(t);
-    for tInit = 1:4 % using every second data as initial state
-        indices = find(t <= tInit);
-        initIdx = indices(end);
+    for tInit = initTimes
+        initIdx = find(t >= tInit,1,'first');
         x0 = x(:,initIdx); % Initial state 
         t0 = t(initIdx); % Start time
-        for j = initIdx+1:numTime
+        for j = initIdx+1:length(t)
             xTrain = [xTrain,[x0; t(j)-t0]];
             yTrain = [yTrain,x(1:6,j)];
         end
@@ -45,23 +44,26 @@ yTrain = yTrain';
 numStates = 6; % 6-dim states in the first second
 layers = [
     featureInputLayer(numStates+1)
+    fullyConnectedLayer(256)
+    reluLayer
     fullyConnectedLayer(128)
-    tanhLayer
+    reluLayer
+    dropoutLayer(0.2)
     fullyConnectedLayer(128)
-    tanhLayer
-    fullyConnectedLayer(128)
-    tanhLayer
+    reluLayer
+    fullyConnectedLayer(64)
+    reluLayer
     fullyConnectedLayer(numStates)
     myRegressionLayer("mse")];
 lgraph = layerGraph(layers);
 % plot(lgraph);
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.001, ...
+    InitialLearnRate=0.0001, ...
     MaxEpochs=maxEpochs, ...
     Shuffle='every-epoch', ...
     Plots='training-progress', ...
-    MiniBatchSize=128, ...
+    MiniBatchSize=200, ...
     Verbose=1);
 
 % training with numeric array data
@@ -90,44 +92,36 @@ ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
-numTime = length(t);
-indices = find(t <= tForceStop);
-initIdx = indices(end);
+initIdx = find(t >= tForceStop,1,'first');
 x0 = x(initIdx,:);
 t0 = t(initIdx);
 % prediction
-xp = zeros(numTime,6);
-xp(1:initIdx,:) = x(1:initIdx,:);
-for i = initIdx+1:numTime
-    xInit = [x0,t(i)-t0];
-    xPred = predict(net,xInit);
-    xp(i,:) = xPred;
+tp = t(initIdx+1:end);
+xp = zeros(length(tp),6);
+for i = 1:length(tp)
+    xp(i,:) = predict(net,[x0,tp(i)-t0]);
 end
-plot_compared_states(t,x,t,xp)
+plot_compared_states(t,x,tp,xp)
 
 %% Test 2
 % simulation with small time interval
-predictTime = 3; 
+predInterval = 3; 
 net = load(modelFile).net;
 ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
-numTime = length(t);
-indices = find(t <= tForceStop);
-initIdx = indices(end);
+initIdx = find(t >= tForceStop,1,'first');
 x0 = x(initIdx,:);
 t0 = t(initIdx);
 % prediction
-xp = zeros(numTime,6);
-xp(1:initIdx,:) = x(1:initIdx,:);
-for i = initIdx+1:numTime
-    xInit = [x0, t(i)-t0];
-    xPred = predict(net,xInit);
-    xp(i,:) = xPred;
-    if (t(i)-t0) > predictTime
-        t0 = t(i-1);
+tp = t(initIdx+1:end);
+xp = zeros(length(tp),6);
+for i = 1:length(tp)
+    if (tp(i)-t0) > predInterval
+        t0 = tp(i-1);
         x0 = xp(i-1,:);
     end
+    xp(i,:) = predict(net,[x0,tp(i)-t0]);
 end
-plot_compared_states(t,x,t,xp)
+plot_compared_states(t,x,tp,xp)
