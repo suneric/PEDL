@@ -55,12 +55,9 @@ dsTrain = combine(dsState, dsTime, dsLabel);
 % read(dsTrain)
 
 %% Create Neural Network and Train
-numFeatures = 7; % 6-dim states + time
-numTime = 1; % the time for prediction
-numOutput = 6; % the 6-dim states of the predicted time step 
-
+numStates = 6; % the 6-dim states of the predicted time step 
 layers = [
-    sequenceInputLayer(numFeatures)
+    sequenceInputLayer(numStates+1)
     lstmLayer(32,OutputMode="last")
     concatenationLayer(1,2,Name="cat")
     fullyConnectedLayer(256)
@@ -72,16 +69,16 @@ layers = [
     reluLayer
     fullyConnectedLayer(64)
     reluLayer
-    fullyConnectedLayer(numOutput)
+    fullyConnectedLayer(numStates)
     myRegressionLayer("mse")];
 lgraph = layerGraph(layers);
 lgraph = addLayers(lgraph,[...
-    featureInputLayer(numTime,Name="time")]);
+    featureInputLayer(1,Name="time")]);
 lgraph = connectLayers(lgraph,"time","cat/in2");
 % plot(lgraph);
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.0001, ...
+    InitialLearnRate=0.001, ...
     MaxEpochs=maxEpochs, ...
     SequencePaddingDirection="left", ...
     Shuffle='every-epoch', ...

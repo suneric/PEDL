@@ -11,8 +11,8 @@ tSpan = [0,10]; % simulation time span
 ctrlOptions = control_options();
 disp("initialize parameters");
 
-modelType = "lstm"; % "dnn", "pinn", "lstm"
-numSamples = 200;
+modelType = "pinn"; % "dnn", "pinn", "lstm"
+numSamples = 100;
 modelFile = "model/"+modelType+"_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 net = load(modelFile).net;
 predInterval = 3;
@@ -22,7 +22,7 @@ ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan, ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
-xp = predict_motion(net,modelType,t,x,predictTime,seqSteps,tForceStop);
+xp = predict_motion(net,modelType,t,x,predInterval,seqSteps,tForceStop);
 
 tTest = [1,10];
 indices = find(t >= tTest(1) & t <= tTest(end));
@@ -54,7 +54,7 @@ end
 
 %% Prediction Accuracy evluation
 % evaluate the model with specified forces, and time steps
-numCase = 30;
+numCase = 50;
 numTime = 100;
 refTime = linspace(1,10,numTime);
 maxForces = linspace(0.5,15,numCase);
@@ -80,6 +80,7 @@ for i = 1:numCase
     errs(idx+4,:) = rmseErr(4,:);
 end
 disp(["model rmse",mean(errs,1)])
+disp(["one rmse",mean(errs,'all')])
 
 disp("plot time step rsme")
 figure('Position',[500,100,800,300]); 
@@ -88,6 +89,7 @@ plot(refTime,mean(errs,1),'k-','LineWidth',2);
 xlabel("Time (s)","FontName","Arial");
 ylabel("Average RMSE","FontName","Arial");
 xticks([1,2,3,4,5,6,7,8,9,10]);
+yticks([0,0.2,0.4,0.6,0.8,1])
 set(gca, 'FontSize', 15);
 
 %% Prediction Speed Evaluation
@@ -166,9 +168,8 @@ function xp = predict_step_state(net,type,xInit,tPred)
             dsTest = combine(dsState, dsTime);
             xp = predict(net,dsTest);
         case "pinn"
-            xInit = dlarray([xInit(1,1:4),tPred]','CB');
-            xPred = predict(net,xInit);
-            xp(1,1:4) = extractdata(xPred);
+            xInit = dlarray([xInit,tPred]','CB');
+            xp = extractdata(predict(net,xInit));
         otherwise 
             disp("unsupport model type")
     end

@@ -33,21 +33,21 @@ yTrain = [];
 for i = 1:numSamples
     data = load(ds.samples{i,1}).state;
     t = data(1,:);
-    x = data(4:7,:); % q1,q2,q1_dot,q2_dot
+    x = data(4:9,:); % q1,q2,q1_dot,q2_dot
     for tInit = initTimes
         initIdx = find(t >= tInit,1,'first');
         x0 = x(:,initIdx); % Initial state 
         t0 = t(initIdx); % Start time
         for j = initIdx+1:length(t)
             xTrain = [xTrain,[x0; t(j)-t0]];
-            yTrain = [yTrain,x(1:4,j)];
+            yTrain = [yTrain,x(:,j)];
         end
     end
 end
 disp([num2str(length(xTrain)),' samples are generated for training.'])
 
 %% make dnn and train 
-numStates = 4; % q1,q2,q1dot,q2dot
+numStates = 6; % q1,q2,q1dot,q2dot
 layers = [
     featureInputLayer(numStates+1)
     fullyConnectedLayer(256)
@@ -93,7 +93,7 @@ monitor.XLabel = "Epoch";
 
 % using stochastic gradient decent
 miniBatchSize = 200;
-learnRate = 0.0001;
+learnRate = 0.001;
 dataSize = size(yTrain,2);
 numBatches = floor(dataSize/miniBatchSize);
 numIterations = maxEpochs * numBatches;
@@ -103,7 +103,9 @@ velocity = [];  % for sgdmupdate
 averageGrad = [];
 averageSqGrad = [];
 iter = 0;
-for i = 1:maxEpochs
+epoch = 0;
+while epoch < maxEpochs && ~monitor.Stop
+    epoch = epoch + 1;
     % Shuffle data.
     idx = randperm(dataSize);
     xTrain = xTrain(:,idx);
@@ -129,7 +131,7 @@ for i = 1:maxEpochs
         recordMetrics(monitor,iter,Loss=loss);
 
         if mod(iter,maxEpochs) == 0
-            updateInfo(monitor,LearnRate=learnRate,Epoch=i,Iteration=iter,MaximumIteration=numIterations,IterationPerEpoch=numBatches);
+            updateInfo(monitor,LearnRate=learnRate,Epoch=epoch,Iteration=iter,MaximumIteration=numIterations,IterationPerEpoch=numBatches);
             monitor.Progress = 100*iter/numIterations;
         end
     end
@@ -156,13 +158,13 @@ net = load(modelFile).net;
 ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
-x = y(:,4:7);
+x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
-x0 = x(initIdx,:);
 t0 = t(initIdx);
+x0 = x(initIdx,:);
 % prediction
 tp = t(initIdx+1:end);
-xp = zeros(length(tp),4);
+xp = zeros(length(tp),6);
 for i = 1:length(tp)
     xp(i,:) = extractdata(predict(net,dlarray([x0,tp(i)-t0]','CB')));
 end
@@ -175,13 +177,13 @@ net = load(modelFile).net;
 ctrlOptions.fMax = [8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
-x = y(:,4:7);
+x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
-x0 = x(initIdx,:);
 t0 = t(initIdx);
+x0 = x(initIdx,:);
 % prediction
 tp = t(initIdx+1:end);
-xp = zeros(length(tp),4);
+xp = zeros(length(tp),6);
 for i = 1:length(tp)
     if (tp(i)-t0) > predInterval
         t0 = tp(i-1);
@@ -196,25 +198,23 @@ function [loss, gradients, state] = modelLoss(net,X,T)
     % make prediction
     [Y, state] = forward(net,X);
     dataLoss = l2loss(Y,T);
-    % dataLoss = mean((T-Y).^2,'all');
-    
+   
     % compute gradients using automatic differentiation
     q1 = Y(1,:);
-    q2 = Y(2,:);
+    q2 = Y(2,:);    
     q1d = Y(3,:);
     q2d = Y(4,:);
-    q1dX = dlgradient(sum(q1d,'all'), X);
-    q1dd = q1dX(5,:);
-    q2dX = dlgradient(sum(q2d,'all'), X);
-    q2dd = q2dX(5,:);
-    q1X = dlgradient(sum(q1,'all'), X);
-    q1d = q1X(5,:);
-    q2X = dlgradient(sum(q2,'all'), X);
-    q2d = q2X(5,:);
+    q1dX = dlgradient(sum(q1d,'all'), X, EnableHigherDerivatives=true);
+    q2dX = dlgradient(sum(q2d,'all'), X, EnableHigherDerivatives=true);
+    q1dd = q1dX(7,:);
+    q2dd = q2dX(7,:); 
+    q1X = dlgradient(sum(q1,'all'), X, EnableHigherDerivatives=true);
+    q2X = dlgradient(sum(q2,'all'), X, EnableHigherDerivatives=true);
+    q1d = q1X(7,:);
+    q2d = q2X(7,:);
     f = physics_law([q1;q2],[q1d;q2d],[q1dd;q2dd]);
     zeroTarget = zeros(size(f),"like",f);
     physicLoss = l2loss(f,zeroTarget);
-    % physicLoss = mean(f.^2,'all');
     
     % total loss
     ctrlOptions = control_options();

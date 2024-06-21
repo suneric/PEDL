@@ -32,7 +32,7 @@ for i = 1:numSamples
         t0 = t(initIdx); % Start time
         for j = initIdx+1:length(t)
             xTrain = [xTrain,[x0; t(j)-t0]];
-            yTrain = [yTrain,x(1:6,j)];
+            yTrain = [yTrain,x(:,j)];
         end
     end
 end
@@ -59,7 +59,7 @@ lgraph = layerGraph(layers);
 % plot(lgraph);
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.0001, ...
+    InitialLearnRate=0.001, ...
     MaxEpochs=maxEpochs, ...
     Shuffle='every-epoch', ...
     Plots='training-progress', ...
@@ -93,8 +93,8 @@ y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
-x0 = x(initIdx,:);
 t0 = t(initIdx);
+x0 = x(initIdx,:);
 % prediction
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
@@ -112,8 +112,8 @@ y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
-x0 = x(initIdx,:);
 t0 = t(initIdx);
+x0 = x(initIdx,:);
 % prediction
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
