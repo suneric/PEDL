@@ -13,7 +13,7 @@ F1Min = 0; %max(10,params(10));
 F1Range = 10;
 % simulate and save data
 samples = {};
-num_samples = 100;
+num_samples = 200;
 for i = 1:num_samples
     disp("generate data for "+num2str(i)+"th sample.");
     ctrlOptions.fMax = [F1Min;0]+rand(2,1).*[F1Range;0]; % random max forces

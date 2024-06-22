@@ -47,12 +47,7 @@ labels = labels';
 % train_indices = indices(1:num_train);
 % test_indices = indices(num_train+1:end);
 
-% combine a datastore for training
-dsState = arrayDatastore(states,'OutputType',"same",'ReadSize',128);
-dsTime = arrayDatastore(times,'ReadSize',128);
-dsLabel = arrayDatastore(labels,'ReadSize',128);
-dsTrain = combine(dsState, dsTime, dsLabel);
-% read(dsTrain)
+
 
 %% Create Neural Network and Train
 numStates = 6; % the 6-dim states of the predicted time step 
@@ -77,13 +72,21 @@ lgraph = addLayers(lgraph,[...
 lgraph = connectLayers(lgraph,"time","cat/in2");
 % plot(lgraph);
 
+% combine a datastore for training
+miniBatchSize = 200;
+dsState = arrayDatastore(states,'OutputType',"same",'ReadSize',miniBatchSize);
+dsTime = arrayDatastore(times,'ReadSize',miniBatchSize);
+dsLabel = arrayDatastore(labels,'ReadSize',miniBatchSize);
+dsTrain = combine(dsState, dsTime, dsLabel);
+% read(dsTrain)
+
 options = trainingOptions("adam", ...
     InitialLearnRate=0.001, ...
     MaxEpochs=maxEpochs, ...
     SequencePaddingDirection="left", ...
     Shuffle='every-epoch', ...
     Plots='training-progress', ...
-    MiniBatchSize=200, ...
+    MiniBatchSize=miniBatchSize, ...
     Verbose=1);
 
 % training with data store
@@ -116,11 +119,11 @@ initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
 startIdx = initIdx-seqSteps+1;
 state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
-x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
 for i = 1:length(tp) 
-    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',128)));
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',miniBatchSize)));
 end
 plot_compared_states(t,x,tp,xp)
 
@@ -136,7 +139,7 @@ initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
 startIdx = initIdx-seqSteps+1;
 state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
-x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
 for i = 1:length(tp) 
@@ -145,8 +148,8 @@ for i = 1:length(tp)
         initIdx = i-1;
         startIdx = initIdx-seqSteps+1;
         state = {[tp(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
-        x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',128);
+        x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
     end
-    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',128)));
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',miniBatchSize)));
 end
 plot_compared_states(t,x,tp,xp)

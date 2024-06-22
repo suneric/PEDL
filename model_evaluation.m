@@ -11,8 +11,8 @@ tSpan = [0,10]; % simulation time span
 ctrlOptions = control_options();
 disp("initialize parameters");
 
-modelType = "pinn"; % "dnn", "pinn", "lstm"
-numSamples = 100;
+modelType = "lstm"; % "dnn", "pinn", "lstm"
+numSamples = 200;
 modelFile = "model/"+modelType+"_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 net = load(modelFile).net;
 predInterval = 3;
@@ -168,8 +168,8 @@ function xp = predict_step_state(net,type,xInit,tPred)
             dsTest = combine(dsState, dsTime);
             xp = predict(net,dsTest);
         case "pinn"
-            xInit = dlarray([xInit,tPred]','CB');
-            xp = extractdata(predict(net,xInit));
+            xInit = dlarray([xInit(1:4),tPred]','CB');
+            xp(1:4) = extractdata(predict(net,xInit));
         otherwise 
             disp("unsupport model type")
     end
