@@ -4,6 +4,6 @@ function ctrlOptions = control_options()
     ctrlOptions.fSpan = [0,1];
     ctrlOptions.fType = "constant";
     ctrlOptions.alpha = 0.2;
-    ctrlOptions.friction = "none"; % coulomb friction
+    ctrlOptions.friction = "smooth"; % coulomb friction
     ctrlOptions.tSample = 0.01; % if use coulomb friction, use a fix sample time interval
 end

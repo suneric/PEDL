@@ -30,7 +30,7 @@ function y = sdpm_simulation(tSpan, ctrlOptions)
 end
 
 function ts = get_sample_times(ctrlOptions, t)
-    if ctrlOptions.friction == "coulomb"
+    if ctrlOptions.friction == 'coulomb'
         ts = [t(1)];
         for i = 1:length(t)
             if(t(i)-ts(end) > ctrlOptions.tSample)

@@ -12,7 +12,7 @@ ctrlOptions = control_options();
 disp("initialize parameters");
 
 modelType = "lstm"; % "dnn", "pinn", "lstm"
-numSamples = 200;
+numSamples = 100;
 modelFile = "model/"+modelType+"_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 net = load(modelFile).net;
 predInterval = 3;
@@ -89,7 +89,7 @@ plot(refTime,mean(errs,1),'k-','LineWidth',2);
 xlabel("Time (s)","FontName","Arial");
 ylabel("Average RMSE","FontName","Arial");
 xticks([1,2,3,4,5,6,7,8,9,10]);
-yticks([0,0.2,0.4,0.6,0.8,1])
+% yticks([0,0.2,0.4,0.6,0.8,1])
 set(gca, 'FontSize', 15);
 
 %% Prediction Speed Evaluation
@@ -102,11 +102,17 @@ t_ode = toc;
 t = y(:,1);
 x = y(:,4:9);
 numTime = length(t);
-indices = find(t <= tForceStop);
-initIdx = indices(end);
+initIdx = find(t >= tForceStop,1,'first');
 % predict time of deep learning model
 tic
-xp = predict_step_state(net,modelType,x(initIdx,:),tPred);
+switch modelType
+    case "lstm"
+        startIdx = initIdx-seqSteps+1;
+        x0 = {[t(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
+    otherwise
+        x0 = x(initIdx,:);
+end
+xp = predict_step_state(net,modelType,x0,tPred);
 t_dlm = toc;
 
 disp(["ode",t_ode,"dlm",t_dlm]);

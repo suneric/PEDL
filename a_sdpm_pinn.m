@@ -205,10 +205,10 @@ function [loss, gradients, state] = modelLoss(net,X,T)
     q2 = Y(2,:);
     q1d = Y(3,:);
     q2d = Y(4,:);
-    q1X = dlgradient(sum(q1,'all'), X, EnableHigherDerivatives=true);
-    q2X = dlgradient(sum(q2,'all'), X, EnableHigherDerivatives=true);
-    q1dX = dlgradient(sum(q1d,'all'), X, EnableHigherDerivatives=true);
-    q2dX = dlgradient(sum(q2d,'all'), X, EnableHigherDerivatives=true);
+    q1X = dlgradient(sum(q1,'all'), X);
+    q2X = dlgradient(sum(q2,'all'), X);
+    q1dX = dlgradient(sum(q1d,'all'), X);
+    q2dX = dlgradient(sum(q2d,'all'), X);
     q1d = q1X(5,:);
     q2d = q2X(5,:); 
     q1dd = q1dX(5,:);
