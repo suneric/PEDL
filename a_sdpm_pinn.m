@@ -16,6 +16,7 @@ clear;
 clc;
 
 %% settings
+params = parameters();
 tSpan = [0,10];
 tForceStop = 1;
 ctrlOptions = control_options();
@@ -24,6 +25,7 @@ ds = load('trainingData.mat');
 numSamples = length(ds.samples);
 modelFile = "model/pinn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 maxEpochs = 50;
+F1Min = max(20,params(10));
 
 %% generate data
 % Feature data: 4-D initial state x0 + time interval
@@ -94,7 +96,7 @@ monitor.XLabel = "Epoch";
 
 % using stochastic gradient decent
 miniBatchSize = 200;
-learnRate = 0.001;
+learnRate = 0.0001;
 dataSize = size(yTrain,2);
 numBatches = floor(dataSize/miniBatchSize);
 numIterations = maxEpochs * numBatches;
@@ -156,18 +158,18 @@ set(gca, 'FontSize', 15);
 
 %% Test 1
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
-x = y(:,4:7);
+x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
-x0 = x(initIdx,:);
+x0 = x(initIdx,1:4);
 % prediction
 tp = t(initIdx+1:end);
-xp = zeros(length(tp),4);
+xp = zeros(length(tp),6);
 for i = 1:length(tp)
-    xp(i,:) = extractdata(predict(net,dlarray([x0,tp(i)-t0]','CB')));
+    xp(i,1:4) = extractdata(predict(net,dlarray([x0,tp(i)-t0]','CB')));
 end
 plot_compared_states(t,x,tp,xp)
 
@@ -175,22 +177,22 @@ plot_compared_states(t,x,tp,xp)
 % simulation with small time interval
 predInterval = 3;
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
-x = y(:,4:7);
+x = y(:,4:9);
 initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
-x0 = x(initIdx,:);
+x0 = x(initIdx,1:4);
 % prediction
 tp = t(initIdx+1:end);
-xp = zeros(length(tp),4);
+xp = zeros(length(tp),6);
 for i = 1:length(tp)
     if (tp(i)-t0) > predInterval
         t0 = tp(i-1);
-        x0 = xp(i-1,:);
+        x0 = xp(i-1,1:4);
     end
-    xp(i,:) = extractdata(predict(net,dlarray([x0,tp(i)-t0]','CB')));
+    xp(i,1:4) = extractdata(predict(net,dlarray([x0,tp(i)-t0]','CB')));
 end
 plot_compared_states(t,x,tp,xp)
 

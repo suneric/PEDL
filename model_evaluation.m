@@ -5,6 +5,7 @@ clc;
 disp("clear and start the program")
 
 %% set task type
+params = parameters();
 seqSteps = 10;
 tForceStop = 1;% time stop force
 tSpan = [0,10]; % simulation time span
@@ -16,9 +17,10 @@ numSamples = 100;
 modelFile = "model/"+modelType+"_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 net = load(modelFile).net;
 predInterval = 3;
+F1Min = max(20,params(10));
 
 %% Single case prediction accuracy over specified time span
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan, ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
@@ -61,7 +63,7 @@ maxForces = linspace(0.5,15,numCase);
 errs = zeros(4*numCase,numTime);
 for i = 1:numCase
     % reference
-    ctrlOptions.fMax = [maxForces(i);0];
+    ctrlOptions.fMax = [F1Min+maxForces(i);0];
     y = sdpm_simulation(tSpan, ctrlOptions);
     t = y(:,1);
     x = y(:,4:9);

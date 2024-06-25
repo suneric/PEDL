@@ -7,6 +7,7 @@ clear;
 clc;
 
 %% settings
+params = parameters();
 tSpan = [0,10];
 tForceStop = 1;
 ctrlOptions = control_options();
@@ -15,6 +16,7 @@ ds = load('trainingData.mat');
 numSamples = length(ds.samples);
 modelFile = "model/dnn_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 maxEpochs = 50;
+F1Min = max(20,params(10));
 
 %% generate data
 % Feature data: 6-D initial state x0 + time interval
@@ -60,7 +62,7 @@ lgraph = layerGraph(layers);
 
 miniBatchSize = 200;
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.001, ...
+    InitialLearnRate=0.0001, ...
     MaxEpochs=maxEpochs, ...
     Shuffle='every-epoch', ...
     Plots='training-progress', ...
@@ -89,7 +91,7 @@ set(gca, 'FontSize', 15);
 
 %% Test 1
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
@@ -108,7 +110,7 @@ plot_compared_states(t,x,tp,xp)
 % simulation with small time interval
 predInterval = 3; 
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);

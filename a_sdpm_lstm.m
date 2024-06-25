@@ -4,6 +4,7 @@ clear;
 clc;
 
 %% set task type
+params = parameters();
 tSpan = [0,10];
 seqSteps = 10;
 tForceStop = 1;
@@ -13,6 +14,7 @@ ds = load('trainingData.mat');
 numSamples = size(ds.samples,1);
 modelFile = "model/lstm_"+num2str(ctrlOptions.alpha)+"_"+num2str(numSamples)+".mat";
 maxEpochs = 50;
+F1Min = max(20,params(10));
 
 %% preprocess data for training
 % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
@@ -81,7 +83,7 @@ dsTrain = combine(dsState, dsTime, dsLabel);
 % read(dsTrain)
 
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.001, ...
+    InitialLearnRate=0.0001, ...
     MaxEpochs=maxEpochs, ...
     SequencePaddingDirection="left", ...
     Shuffle='every-epoch', ...
@@ -111,7 +113,7 @@ set(gca, 'FontSize', 15);
 
 %% Test 1
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
@@ -119,11 +121,11 @@ initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
 startIdx = initIdx-seqSteps+1;
 state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
-x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',200);
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
 for i = 1:length(tp) 
-    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',miniBatchSize)));
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',200)));
 end
 plot_compared_states(t,x,tp,xp)
 
@@ -131,7 +133,7 @@ plot_compared_states(t,x,tp,xp)
 % simulation with small time interval
 predInterval = 3;
 net = load(modelFile).net;
-ctrlOptions.fMax = [8;0];
+ctrlOptions.fMax = [F1Min+8;0];
 y = sdpm_simulation(tSpan,ctrlOptions);
 t = y(:,1);
 x = y(:,4:9);
@@ -139,7 +141,7 @@ initIdx = find(t >= tForceStop,1,'first');
 t0 = t(initIdx);
 startIdx = initIdx-seqSteps+1;
 state = {[t(startIdx:initIdx),x(startIdx:initIdx,:)]'};
-x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
+x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',200);
 tp = t(initIdx+1:end);
 xp = zeros(length(tp),6);
 for i = 1:length(tp) 
@@ -148,8 +150,8 @@ for i = 1:length(tp)
         initIdx = i-1;
         startIdx = initIdx-seqSteps+1;
         state = {[tp(startIdx:initIdx),xp(startIdx:initIdx,:)]'};
-        x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',miniBatchSize);
+        x0 = arrayDatastore(state,'OutputType',"same",'ReadSize',200);
     end
-    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',miniBatchSize)));
+    xp(i,:) = predict(net,combine(x0, arrayDatastore(tp(i)-t0,'ReadSize',200)));
 end
 plot_compared_states(t,x,tp,xp)

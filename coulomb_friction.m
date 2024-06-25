@@ -11,8 +11,8 @@ function fc = coulomb_friction(v, F)
         case "none"
             fc = 0;
         case 'smooth'
-            vd = 0.1; % m/s
-            fc = -mu_s*N*tanh(v/vd);    
+            vd = 0.01; % m/s
+            fc = mu_s*N*tanh(v/vd);    
         case 'coulomb'       
             tolerance = params(9);
             if abs(v) < tolerance

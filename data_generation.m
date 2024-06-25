@@ -9,7 +9,7 @@ params = parameters();
 ctrlOptions = control_options();
 strType = {'constant','increase','decrease'};
 tSpan = [0,5];
-F1Min = 0;%max(10,params(10));
+F1Min = max(20,params(10));
 F1Range = 10;
 % simulate and save data
 samples = {};
