@@ -2,7 +2,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
 %% train a LSTM-based model
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = "./model/"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
 
     %% preprocess data for training
     % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
@@ -69,7 +69,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
     lgraph = addLayers(lgraph,[...
         featureInputLayer(1, Name = "time")]);
     lgraph = connectLayers(lgraph, "time", "cat/in2");
-    plot(lgraph);
+    % plot(lgraph);
 
     % combine a datastore for training
     dsState = arrayDatastore(states, "OutputType", "same", "ReadSize", trainParams.miniBatchSize);
@@ -89,5 +89,5 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
     
     % training with data store
     [net,info] = trainNetwork(dsTrain, lgraph, options);
-    save(modelFile, "net");
-    disp(info)
+    save(modelFile, 'net');
+    % disp(info)

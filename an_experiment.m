@@ -8,9 +8,9 @@ ctrlParams = params_control();
 trainParams = params_training();
 
 %% plot system motion with a sample
-% fRange = 3;
-% tSpan = [0,5];
-% plot_system(sysParams, ctrlParams, fRange, tSpan);
+fRange = 3;
+tSpan = [0,5];
+plot_system(sysParams, ctrlParams, fRange, tSpan);
 
 %% generate samples
 dataFile = generate_samples(sysParams, ctrlParams, trainParams);
@@ -34,5 +34,5 @@ tSpan = [0,10];
 plot_prediction(modelFile, sysParams, ctrlParams, trainParams, fRange, predIntervel, tSpan);
 
 %% model evaluation
-% avgRMSE = evaluate_model(modelFile, sysParams, ctrlParams, trainParams);
-% disp(["average rmse", avgRMSE])
+avgRMSE = evaluate_model(modelFile, sysParams, ctrlParams, trainParams);
+disp(["average rmse", avgRMSE])

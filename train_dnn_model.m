@@ -3,7 +3,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     % load samples and prepare training dataset
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = "./model/"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
     
     % generate training dataset
     % Feature: 6-D initial state (x0) + the predict future time (t)
@@ -63,7 +63,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
        ];
 
     lgraph = layerGraph(layers);
-    plot(lgraph);
+    % plot(lgraph);
     
     options = trainingOptions("adam", ...
         InitialLearnRate = trainParams.learningRate, ...
@@ -75,7 +75,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     
     % training with numeric array data
     [net,info] = trainNetwork(xTrain,yTrain,lgraph,options);
-    save(modelFile,"net");
-    disp(info)
+    save(modelFile, 'net');
+    % disp(info)
 end
     

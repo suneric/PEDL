@@ -21,6 +21,10 @@ octave-workspace
 # Simulink autosave extension
 .autosave
 
+*.mat
+
 data
 image
 model
+resources
+Results
