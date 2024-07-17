@@ -1,4 +1,3 @@
-% plot comparison
 function plot_compared_states(t,x,tp,xp)
     labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$","$\ddot{q}_1$","$\ddot{q}_2$"];
     figure('Position',[500,100,800,800]);

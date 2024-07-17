@@ -1,15 +1,16 @@
-function force = force_function(t, fMax, fSpan, fType)
-% Create control forces 
-    tStart = fSpan(1);
-    tEnd = fSpan(2);
-    if t <= tEnd && t >= tStart
+function force = force_function(t, ctrlParams)
+    % apply force (fMax) in range of fSpan according to the fType
+    fSpan = ctrlParams.fSpan;
+    fMax = ctrlParams.fMax;
+    fType = ctrlParams.fType;
+    if t <= fSpan(2) && t >= fSpan(1)
         switch fType
             case "constant"
                 force = fMax;
             case "increase"
-                force = fMax*(t-tStart)/(tEnd-tStart); 
+                force = fMax*(t-fSpan(1)) / (fSpan(2)-fSpan(1)); 
             case "decrease"
-                force = fMax-fMax*(t-tStart)/(tEnd-tStart);
+                force = fMax-fMax*(t-fSpan(1)) / (fSpan(2)-fSpan(1));
             otherwise
                 force = fMax;
         end
