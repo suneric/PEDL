@@ -2,7 +2,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
 %% train a LSTM-based model
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
 
     %% preprocess data for training
     % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 

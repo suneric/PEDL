@@ -1,7 +1,6 @@
 function dataFile = generate_samples(sysParams, ctrlParams, trainParams)
 % Generate samples and save the data file into a subfolder "data\"
-    addpath("data\");
-    dataFile = "trainingSamples"+num2str(trainParams.numSamples)+".mat";
+    dataFile = "trainingSamples.mat";
     % check whether need to regenerate samples
     regenerate_samples = 1; % by default, regrenerate samples
     if exist(dataFile, 'file') == 2

@@ -14,7 +14,7 @@ function modelFile = train_pinn_model(sampleFile, trainParams)
     % load samples and prepare training dataset
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
     
     %% generate data
     % Feature data: 6-D initial state x0 + time interval

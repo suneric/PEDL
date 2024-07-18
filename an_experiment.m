@@ -13,9 +13,15 @@ tSpan = [0,5];
 plot_system(sysParams, ctrlParams, fRange, tSpan);
 
 %% generate samples
+if ~exist("\data\", 'dir')
+   mkdir("data");
+end
 dataFile = generate_samples(sysParams, ctrlParams, trainParams);
 
 %% train model
+if ~exist("\model\", 'dir')
+   mkdir("model");
+end
 switch trainParams.type
     case "dnn"
         modelFile = train_dnn_model(dataFile, trainParams);
