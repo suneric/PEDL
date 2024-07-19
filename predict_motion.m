@@ -48,8 +48,8 @@ function xp = predict_step_state(net, type, xInit, tPred)
         case "dnn"
             xp = predict(net, [xInit, tPred]);
         case "lstm"
-            dsState = arrayDatastore(xInit, 'OutputType', 'same', 'ReadSize',32);
-            dsTime = arrayDatastore(tPred, 'ReadSize', 32);
+            dsState = arrayDatastore(xInit, 'OutputType', 'same', 'ReadSize',1);
+            dsTime = arrayDatastore(tPred, 'ReadSize', 1);
             dsTest = combine(dsState, dsTime);
             xp = predict(net, dsTest);
         case "pinn"

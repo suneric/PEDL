@@ -3,13 +3,14 @@ function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams)
     numCase = 30; % evaluate cases
     numTime = 60; % evaluate time points 
     tSpan = [0,10]; % evaluate time span
-    predInterval = 3; % predict maximum time interval
+    predInterval = 10; % predict maximum time interval
     
     errs = zeros(6*numCase, numTime);
 
     fRanges = linspace(0.5, 15, numCase);
     refTime = linspace(1, 10, numTime); % reference time points
     for i = 1:numCase
+        disp("evaluate "+num2str(i)+" th case.");
         ctrlParams.fMax = [sysParams.fc_max+fRanges(i); 0]; 
         y = sdpm_simulation(tSpan, sysParams, ctrlParams);
         t = y(:,1);

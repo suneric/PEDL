@@ -1,9 +1,9 @@
 function params = params_training()
     params = struct();
-    params.type = "dnn"; % "dnn", "lstm", "pinn"
+    params.type = "lstm"; % "dnn", "lstm", "pinn"
     params.sequenceStep = 4; % 1 for non-lstm, 4,8,16 
     params.alpha = 0.5; % [0,1] weight of data loss and physics loss
-    params.numSamples = 300; % 100, 200, 300, 400, 500
+    params.numSamples = 100; % 100, 200, 300, 400, 500
     params.numLayers = 4; % [3,10]
     params.numNeurons = 64; % 32,64,128,256
     params.dropoutFactor = 0.1; % 0.1, 0.2
