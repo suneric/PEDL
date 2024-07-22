@@ -154,7 +154,7 @@ function [loss, gradients, state] = modelLoss(net, X, T)
     % physicLoss = mean((fY-fT).^2, 'all');
     
     % total loss
-    params = params_training();
-    loss = (1.0-params.alpha)*dataLoss + params.alpha*physicLoss;
+    global trainParams
+    loss = (1.0-trainParams.alpha)*dataLoss + trainParams.alpha*physicLoss;
     gradients = dlgradient(loss, net.Learnables);
 end

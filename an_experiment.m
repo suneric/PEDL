@@ -5,6 +5,7 @@ clc;
 
 sysParams = params_system();
 ctrlParams = params_control();
+global trainParams;
 trainParams = params_training();
 
 %% plot system motion with a sample
