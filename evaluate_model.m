@@ -1,17 +1,18 @@
 function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams)
     net = load(modelFile).net;
-    numCase = 30; % evaluate cases
-    numTime = 60; % evaluate time points 
     tSpan = [0,10]; % evaluate time span
     predInterval = 10; % predict maximum time interval
-    
+    % test F1 range from 15N~35N
+    numCase = 30; % evaluate cases
+    f1Min = 15; 
+    f1Range = linspace(0, 20, numCase);
+    % reference time points
+    numTime = 60; % evaluate time points 
+    refTime = linspace(1, 10, numTime); 
     errs = zeros(6*numCase, numTime);
-
-    fRanges = linspace(0.5, 15, numCase);
-    refTime = linspace(1, 10, numTime); % reference time points
     for i = 1:numCase
         disp("evaluate "+num2str(i)+" th case.");
-        ctrlParams.fMax = [sysParams.fc_max+fRanges(i); 0]; 
+        ctrlParams.fMax = [f1Min+f1Range(i); 0]; 
         y = sdpm_simulation(tSpan, sysParams, ctrlParams);
         t = y(:,1);
         x = y(:,2:7);

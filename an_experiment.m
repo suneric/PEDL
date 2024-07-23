@@ -9,9 +9,9 @@ global trainParams;
 trainParams = params_training();
 
 %% plot system motion with a sample
-fRange = 3;
+f1Max = 20;
 tSpan = [0,5];
-plot_system(sysParams, ctrlParams, fRange, tSpan);
+plot_system(sysParams, ctrlParams, f1Max, tSpan);
 
 %% generate samples
 if ~exist("\data\", 'dir')

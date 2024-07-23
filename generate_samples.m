@@ -13,11 +13,12 @@ function dataFile = generate_samples(sysParams, ctrlParams, trainParams)
     % generate sample data
     if regenerate_samples      
         samples = {};
-        f1Min = max(15, sysParams.fc_max);
+        f1Min = 20;
+        f1Range = 10;
         for i = 1:trainParams.numSamples
             disp("generate data for " + num2str(i) + "th sample.");
             % random max force F1 for each sample in a varying range of 10N
-            ctrlParams.fMax = [f1Min; 0]+rand(2,1).*[10; 0]; 
+            ctrlParams.fMax = [f1Min; 0]+rand(2,1).*[f1Range; 0]; 
             y = sdpm_simulation([0,5], sysParams, ctrlParams);
             state = y';
             fname=['data\input',num2str(i),'.mat'];

@@ -1,6 +1,5 @@
-function plot_system(sysParams, ctrlParams, fRange, tSpan)
-    f1Min = max(15, sysParams.fc_max);
-    ctrlParams.fMax = [f1Min+fRange; 0]; 
+function plot_system(sysParams, ctrlParams, f1Max, tSpan)
+    ctrlParams.fMax = [f1Max; 0]; 
     y = sdpm_simulation(tSpan, sysParams, ctrlParams);
     t = y(:, 1);
     x = y(:, 2:7);
