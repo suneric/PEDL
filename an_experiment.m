@@ -35,10 +35,10 @@ switch trainParams.type
 end
 
 %% plot prediction
-fRange = 8;
+f1Max = 28;
 predIntervel = 10;
 tSpan = [0,10];
-plot_prediction(modelFile, sysParams, ctrlParams, trainParams, fRange, predIntervel, tSpan);
+plot_prediction(modelFile, sysParams, ctrlParams, trainParams, f1Max, predIntervel, tSpan);
 
 %% model evaluation
 avgRMSE = evaluate_model(modelFile, sysParams, ctrlParams, trainParams);

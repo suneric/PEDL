@@ -1,8 +1,7 @@
-function plot_prediction(modelFile,sysParams,ctrlParams,trainParams,fRange,predInterval,tSpan)
+function plot_prediction(modelFile,sysParams,ctrlParams,trainParams,f1Max,predInterval,tSpan)
 % Single case prediction accuracy over specified time span
     net = load(modelFile).net;
-    f1Min = max(15, sysParams.fc_max);
-    ctrlParams.fMax = [f1Min+fRange; 0]; 
+    ctrlParams.fMax = [f1Max; 0]; 
     y = sdpm_simulation(tSpan, sysParams, ctrlParams);
     t = y(:, 1);
     x = y(:, 2:7);

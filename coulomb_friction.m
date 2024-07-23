@@ -27,9 +27,9 @@ end
 function fc = andersoon_model(mu_s, mu_k, N, v)
     % disp("Apply andersson coulomb friction.")
     vs = 0.01; % m/s
-    k = 10; % transition steepness parameter
-    mu_v = 0.05; % viscous friction coefficient
+    k = 800; % transition steepness parameter
     p = 2; % stribeck curve shape parameter;
-    mu = mu_k + (mu_k-mu_s) * exp(-(abs(v)/vs)^p); % friction coefficient
+    mu_v = 0.001;
+    mu = mu_k + (mu_s - mu_k) * exp(-(abs(v) / vs)^p); % friction coefficient
     fc = mu * N * tanh(k*v) + mu_v*v;
 end

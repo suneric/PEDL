@@ -1,6 +1,6 @@
 function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     % ODE solver
-    % opts = odeset('MaxStep',0.5);
+    % opts = odeset('MaxStep',0.01);
     x0 = zeros(4, 1);
     [t,x] = ode45(@(t,x) sdpm_system(t, x, sysParams, ctrlParams), tSpan, x0);
     % sample time points
