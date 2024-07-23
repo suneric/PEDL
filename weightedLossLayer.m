@@ -24,6 +24,7 @@ classdef weightedLossLayer < nnet.layer.RegressionLayer ...
             fT = physics_law(T(1:2,:),T(3:4,:),T(5:6,:));
             fY = physics_law(Y(1:2,:),Y(3:4,:),Y(5:6,:));
             physicLoss = mean((fY-fT).^2,'all');
+            % physicLoss = mean(fY.^2,'all');
             % final loss, combining data loss and physics loss
             global trainParams;
             loss = (1.0-trainParams.alpha)*dataLoss + trainParams.alpha*physicLoss;

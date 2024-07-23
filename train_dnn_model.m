@@ -9,7 +9,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     % Feature: 6-D initial state (x0) + the predict future time (t)
     % Label: a predicted state x = [q1,q2,q1dot,q2dot,q1ddot,q2ddot]'
     % Start from 1 sec to 4 sec with 0.5 sec step 
-    initTimes = 1:0.5:4; 
+    initTimes = 1:4; 
     xTrain = [];
     yTrain = [];
     for i = 1:numSamples

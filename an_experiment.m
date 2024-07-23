@@ -3,10 +3,10 @@ close all;
 clear; 
 clc;
 
-sysParams = params_system();
-ctrlParams = params_control();
 global trainParams;
 trainParams = params_training();
+sysParams = params_system();
+ctrlParams = params_control();
 
 %% plot system motion with a sample
 f1Max = 20;
@@ -34,12 +34,14 @@ switch trainParams.type
         disp("unspecified type of model.")
 end
 
-%% plot prediction
-f1Max = 28;
-predIntervel = 10;
-tSpan = [0,10];
-plot_prediction(modelFile, sysParams, ctrlParams, trainParams, f1Max, predIntervel, tSpan);
-
 %% model evaluation
+disp("evaluating trained model...")
 avgRMSE = evaluate_model(modelFile, sysParams, ctrlParams, trainParams);
 disp(["average rmse", avgRMSE])
+
+%% plot prediction
+disp("plot prediction...")
+f1Max = 30;
+predIntervel = 7;
+tSpan = [0,7];
+plot_prediction(modelFile, sysParams, ctrlParams, trainParams, f1Max, predIntervel, tSpan);

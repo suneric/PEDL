@@ -6,7 +6,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
 
     %% preprocess data for training
     % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
-    initTimes = 1:0.5:4; %start from 1 sec to 4 sec with 0.5 sec step 
+    initTimes = 1:4; %start from 1 sec to 4 sec with 0.5 sec step 
     states = {};
     times = [];
     labels = [];

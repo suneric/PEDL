@@ -1,14 +1,16 @@
 function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams)
     net = load(modelFile).net;
-    tSpan = [0,10]; % evaluate time span
-    predInterval = 10; % predict maximum time interval
-    % test F1 range from 15N~35N
+    % evaluate time span, larger time span will increase the simulation
+    % time when complicated friction involved
+    tSpan = [0,7]; 
+    predInterval = tSpan(2); % predict maximum time interval
+    % test F1 range from 15N ~ 35N
     numCase = 30; % evaluate cases
     f1Min = 15; 
     f1Range = linspace(0, 20, numCase);
     % reference time points
-    numTime = 60; % evaluate time points 
-    refTime = linspace(1, 10, numTime); 
+    numTime = 50; % evaluate time points 
+    refTime = linspace(1, tSpan(2), numTime); 
     errs = zeros(6*numCase, numTime);
     for i = 1:numCase
         disp("evaluate "+num2str(i)+" th case.");
@@ -41,7 +43,7 @@ function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams)
     plot(refTime,mean(errs,1),'k-','LineWidth',2);
     xlabel("Time (s)","FontName","Arial");
     ylabel("Average RMSE","FontName","Arial");
-    xticks([1,2,3,4,5,6,7,8,9,10]);
+    xticks(linspace(1,tSpan(2),(tSpan(2))));
     set(gca, 'FontSize', 15);
 end
 

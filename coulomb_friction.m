@@ -13,6 +13,8 @@ function fc = coulomb_friction(v, sysParams, friction)
             fc = smooth_model(mu_s, N, v);
         case 'andersson'
             fc = andersoon_model(mu_s, mu_k, N, v);
+        case 'specker'
+            fc = specker_model(mu_s, mu_k, N, v);
         otherwise
             fc = 0;
     end
@@ -26,10 +28,19 @@ end
 
 function fc = andersoon_model(mu_s, mu_k, N, v)
     % disp("Apply andersson coulomb friction.")
-    vs = 0.01; % m/s
-    k = 800; % transition steepness parameter
+    vd = 0.1; % m/s
+    k = 10000; % transition steepness parameter
     p = 2; % stribeck curve shape parameter;
-    mu_v = 0.001;
-    mu = mu_k + (mu_s - mu_k) * exp(-(abs(v) / vs)^p); % friction coefficient
-    fc = mu * N * tanh(k*v) + mu_v*v;
+    % tanh(kv) term smoothly transitions from static friction to kinetic friction
+    % when v is small, tanh(kv) = kv, when v is large tanh(kv) = 1.
+    % this helps to model the gradual increase in friction forces as
+    % velocity increases from zero.
+    fc = N*(mu_k+(mu_s-mu_k)*exp(-(abs(v)/vd).^p)).*tanh(k*v); 
+end
+
+function fc = specker_model(mu_s, mu_k, N, v)
+    vd = 0.05; % m/s
+    vt = 2*vd;
+    kv = 0;
+    fc = (N*mu_s-N*mu_k*tanh(vt/vd)-kv*vt).*(v/vt).*exp(0.5*(1-(v/vt).^2)) + N*mu_k*tanh(v/vd);
 end

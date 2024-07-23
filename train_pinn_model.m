@@ -19,7 +19,7 @@ function modelFile = train_pinn_model(sampleFile, trainParams)
     %% generate data
     % Feature data: 6-D initial state x0 + time interval
     % the label data is a predicted state x=[q1,q2,q1dot,q2dot,q1ddot,q2ddot]
-    initTimes = 1:0.5:4; %start from 1 sec to 4 sec with 0.5 sec step 
+    initTimes = 1:4; %start from 1 sec to 4 sec with 0.5 sec step 
     xTrain = [];
     yTrain = [];
     for i = 1:numSamples
@@ -77,14 +77,23 @@ function modelFile = train_pinn_model(sampleFile, trainParams)
     monitor = trainingProgressMonitor;
     monitor.Metrics = "Loss";
     monitor.Info = ["LearnRate", "IterationPerEpoch", "MaximumIteration", "Epoch", "Iteration"];
-    monitor.XLabel = "Epoch";
+    monitor.XLabel = "Iteration";
     
+    net = train_adam_update(net, xTrain, yTrain, trainParams, monitor);
+
+    save(modelFile, 'net');
+
+end
+
+function net = train_adam_update(net, xTrain, yTrain, trainParams, monitor)
     % using stochastic gradient decent
     miniBatchSize = trainParams.miniBatchSize;
     lrRate = trainParams.learningRate;
     dataSize = size(yTrain,2);
     numBatches = floor(dataSize/miniBatchSize);
     numIterations = trainParams.numEpochs * numBatches;
+
+    accFun = dlaccelerate(@modelLoss);
     
     avgGrad = [];
     avgSqGrad = [];
@@ -106,10 +115,10 @@ function modelFile = train_pinn_model(sampleFile, trainParams)
             T = gpuArray(dlarray(yBatch, "CB"));
             % Evaluate the model loss and gradients using dlfeval and the
             % modelLoss function.
-            [loss, gradients] = dlfeval(@modelLoss, net, X, T);
+            [loss, gradients] = dlfeval(accFun, net, X, T);
     
             % Update the network parameters using the ADAM optimizer.
-            [net, avgGrad, avgSqGrad] = adamupdate(net, gradients, avgGrad,avgSqGrad,iter,lrRate);
+            [net, avgGrad, avgSqGrad] = adamupdate(net, gradients, avgGrad, avgSqGrad, iter, lrRate);
     
             recordMetrics(monitor, iter, Loss=loss);
     
@@ -124,8 +133,6 @@ function modelFile = train_pinn_model(sampleFile, trainParams)
             end
         end
     end
-    save(modelFile, 'net');
-
 end
 
 %% loss function
@@ -133,25 +140,24 @@ function [loss, gradients, state] = modelLoss(net, X, T)
     % make prediction
     [Y, state] = forward(net, X);
     dataLoss = l2loss(Y, T);
-    % dataLoss = mean((Y-T).^2, 'all');
    
     % compute gradients using automatic differentiation
     q1 = Y(1,:);
     q2 = Y(2,:);
     q1d = Y(3,:);
     q2d = Y(4,:);
-    q1dX = dlgradient(sum(q1d, 'all'), X);
-    q2dX = dlgradient(sum(q2d, 'all'), X);
-    % q1X = dlgradient(sum(q1, 'all'), X);
-    % q2X = dlgradient(sum(q2, 'all'), X);
+    % q1X = dlgradient(sum(q1, 'all'), X, EnableHigherDerivatives=true);
+    % q2X = dlgradient(sum(q2, 'all'), X, EnableHigherDerivatives=true);
     % q1d = q1X(7, :);
     % q2d = q2X(7, :);
+    q1dX = dlgradient(sum(q1d, 'all'), X);
+    q2dX = dlgradient(sum(q2d, 'all'), X); 
     q1dd = q1dX(7, :);
     q2dd = q2dX(7, :);
     fT = physics_law(T(1:2, :), T(3:4, :), T(5:6, :));
     fY = physics_law([q1; q2], [q1d; q2d], [q1dd; q2dd]);
     physicLoss = l2loss(fY, fT);
-    % physicLoss = mean((fY-fT).^2, 'all');
+    % physicLoss = l2loss(fY, zeros(size(fY),'like',fY));
     
     % total loss
     global trainParams
