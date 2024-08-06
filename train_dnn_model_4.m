@@ -1,5 +1,8 @@
-function modelFile = train_dnn_model(sampleFile, trainParams)
+function [modelFile, trainLoss] = train_dnn_model_4(sampleFile, trainParams)
 % Train a DNN model for learning dynamics system behvior
+% with only 4 state, q1, q2, q1d, q2d 
+% the loss function is the normal mse of predict state and true state
+% no additional information in loss function
     % load samples and prepare training dataset
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
@@ -15,9 +18,9 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     for i = 1:numSamples
         data = load(ds.samples{i,1}).state;
         t = data(1,:);
-        x = data(2:7,:);
+        x = data(2:5,:); % q1,q2,q1d,q2d
         for tInit = initTimes
-            initIdx = find(t >= tInit, 1, 'first');
+            initIdx = find(t > tInit, 1, 'first');
             x0 = x(:,initIdx);  % Initial state 
             t0 = t(initIdx);    % Start time
             for j = initIdx+1:length(t)
@@ -31,7 +34,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     yTrain = yTrain';
 
     % Create neural network
-    numStates = 6;
+    numStates = 4;
     layers = [
         featureInputLayer(numStates+1, "Name", "input")
         ];
@@ -41,25 +44,27 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            reluLayer
+            tanhLayer
         ];
     end
-    layers = [
-        layers
-        dropoutLayer(trainParams.dropoutFactor)
+    if trainParams.dropoutFactor > 0
+        layers = [
+            layers
+            dropoutLayer(trainParams.dropoutFactor)
         ];
+    end
     for i = numMiddle+1:trainParams.numLayers
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            reluLayer
+            tanhLayer
         ];
     end
     
     layers = [
         layers
         fullyConnectedLayer(numStates, "Name", "output")
-        weightedLossLayer("mse")
+        regressionLayer % mse regression
        ];
 
     lgraph = layerGraph(layers);
@@ -75,6 +80,7 @@ function modelFile = train_dnn_model(sampleFile, trainParams)
     
     % training with numeric array data
     [net,info] = trainNetwork(xTrain,yTrain,lgraph,options);
+    trainLoss = info.TrainingLoss;
     save(modelFile, 'net');
     % disp(info)
 end

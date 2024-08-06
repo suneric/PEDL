@@ -1,6 +1,6 @@
 function plot_compared_states(t,x,tp,xp)
     labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$","$\ddot{q}_1$","$\ddot{q}_2$"];
-    figure('Position',[500,100,800,800]);
+    figure('Position',[500,200,600,600]);
     tiledlayout("vertical","TileSpacing","tight")
     numState = size(xp);
     numState = numState(2);
@@ -17,5 +17,5 @@ function plot_compared_states(t,x,tp,xp)
             xlabel("Time (s)");
         end
     end 
-    legend("Reference","Prediction","Location","eastoutside","FontName","Arial");
+    % legend("Reference","Prediction","Location","eastoutside","FontName","Arial");
 end

@@ -1,9 +1,10 @@
 function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     % ODE solver
-    % opts = odeset('MaxStep',0.01);
-    x0 = zeros(4, 1);
+    % opts = odeset('MaxStep',0.0001);
+    x0 = zeros(4, 1); % q1, q1d, q2, q2d
     [t,x] = ode45(@(t,x) sdpm_system(t, x, sysParams, ctrlParams), tSpan, x0);
     % sample time points
+    [t,x] = get_samples(ctrlParams, t, x, ctrlParams.tolerance);
     numTime = length(t);
     y = zeros(numTime, 10); 
     for i = 1 : numTime
@@ -20,5 +21,21 @@ function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
         y(i,8) = F(1); % f1
         y(i,9) = F(2); % f2
         y(i,10) = -fc; % coulomb friction
+    end
+end
+
+function [ts, xs] = get_samples(ctrlParams, t, x, tStep)
+    if ctrlParams.friction == "andersson"
+        ts = [t(1)];
+        xs = [x(1,:)];
+        for i = 1:length(t)
+            if(t(i)-ts(end) >= tStep)
+                ts = [ts;t(i)];
+                xs = [xs;x(i,:)];
+            end
+        end
+    else
+        ts = t;
+        xs = x;
     end
 end

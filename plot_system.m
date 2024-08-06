@@ -1,4 +1,4 @@
-function plot_system(sysParams, ctrlParams, f1Max, tSpan)
+function len = plot_system(sysParams, ctrlParams, f1Max, tSpan)
     ctrlParams.fMax = [f1Max; 0]; 
     y = sdpm_simulation(tSpan, sysParams, ctrlParams);
     t = y(:, 1);
@@ -7,6 +7,7 @@ function plot_system(sysParams, ctrlParams, f1Max, tSpan)
     fc = y(:, 10);
     plot_states(t, x);
     plot_forces(t, f1, fc);
+    len = length(t);
 end
 
 function plot_forces(t, f1, fc)

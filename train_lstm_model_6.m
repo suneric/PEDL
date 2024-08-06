@@ -1,4 +1,4 @@
-function modelFile = train_lstm_model(sampleFile, trainParams)
+function [modelFile, trainLoss] = train_lstm_model_6(sampleFile, trainParams)
 %% train a LSTM-based model
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
@@ -15,7 +15,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
         t = data(1,:);
         x = data(2:7,:);
         for tInit = initTimes
-            initIdx = find(t >= tInit, 1, 'first');
+            initIdx = find(t > tInit, 1, 'first');
             startIdx = initIdx-trainParams.sequenceStep+1;
             t0 = t(initIdx);
             x0 = [t(startIdx:initIdx); x(:,startIdx:initIdx)];
@@ -35,7 +35,7 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
     numStates = 6;
     layers = [
         sequenceInputLayer(numStates+1)
-        lstmLayer(32, OutputMode = "last")
+        lstmLayer(trainParams.numUnits, OutputMode = "last")
         concatenationLayer(1, 2, Name = "cat")
         ];
     
@@ -44,18 +44,20 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            reluLayer
+            tanhLayer
         ];
     end
-    layers = [
-        layers
-        dropoutLayer(trainParams.dropoutFactor)
+    if trainParams.dropoutFactor > 0
+        layers = [
+            layers
+            dropoutLayer(trainParams.dropoutFactor)
         ];
+    end
     for i = numMiddle+1:trainParams.numLayers
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            reluLayer
+            tanhLayer
         ];
     end
     
@@ -89,5 +91,6 @@ function modelFile = train_lstm_model(sampleFile, trainParams)
     
     % training with data store
     [net,info] = trainNetwork(dsTrain, lgraph, options);
+    trainLoss = info.TrainingLoss;
     save(modelFile, 'net');
     % disp(info)
