@@ -1,4 +1,4 @@
-function [dataFile, fMaxRange] = generate_samples(sysParams, ctrlParams, trainParams)
+function [dataFile, fMaxRange] = generate_samples(sysParams, ctrlParams, trainParams, f1Max, tSpan)
 % Generate samples and save the data file into a subfolder "data\"
     dataFile = "trainingSamples.mat";
     fMaxRange = zeros(trainParams.numSamples,1);
@@ -18,9 +18,8 @@ function [dataFile, fMaxRange] = generate_samples(sysParams, ctrlParams, trainPa
     % generate sample data
     if regenerate_samples      
         samples = {};
-        f1Min = 10;
-        f1Range = 10;
-        tSpan = [0,5]; % training time span
+        f1Min = f1Max(1);
+        f1Range = f1Max(2)-f1Max(1);
         for i = 1:trainParams.numSamples
             disp("generate data for " + num2str(i) + "th sample.");
             % random max force F1 for each sample in a varying range of 10N

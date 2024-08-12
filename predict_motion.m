@@ -32,7 +32,7 @@ function xp = predict_motion(net, type, t, x, predInterval, seqSteps, tForceStop
                 dsTest = combine(dsState, dsTime);
                 xp(i,:) = predict(net, dsTest);
             end
-        case "pinn6"
+        case {"pinn6", "pirn6"}
             xp = zeros(numTime, 6);
             xp(1:initIdx, :) = x(1:initIdx, :);
             x0 = xp(initIdx, :);
@@ -74,7 +74,7 @@ function xp = predict_motion(net, type, t, x, predInterval, seqSteps, tForceStop
                 dsTest = combine(dsState, dsTime);
                 xp(i,1:4) = predict(net, dsTest);
             end
-        case "pinn4"
+        case {"pinn4", "pirn4"}
             xp = zeros(numTime, 4);
             xp(1:initIdx, :) = x(1:initIdx, 1:4);
             x0 = xp(initIdx, :);
@@ -116,7 +116,7 @@ function xp = predict_motion(net, type, t, x, predInterval, seqSteps, tForceStop
                 dsTest = combine(dsState, dsTime);
                 xp(i,1:2) = predict(net, dsTest);
             end
-        case "pinn2"
+        case {"pinn2", "pirn2"}
             xp = zeros(numTime, 2);
             xp(1:initIdx, :) = x(1:initIdx, 1:2);
             x0 = xp(initIdx, :);

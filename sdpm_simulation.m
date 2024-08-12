@@ -1,10 +1,14 @@
 function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     % ODE solver
-    % opts = odeset('MaxStep',0.0001);
+    if ctrlParams.fixedTimeStep ~= 0
+        tSpan = tSpan(1):ctrlParams.fixedTimeStep:tSpan(2);
+    end
     x0 = zeros(4, 1); % q1, q1d, q2, q2d
     [t,x] = ode45(@(t,x) sdpm_system(t, x, sysParams, ctrlParams), tSpan, x0);
     % sample time points
-    [t,x] = get_samples(ctrlParams, t, x, ctrlParams.tolerance);
+    if ctrlParams.fixedTimeStep == 0
+        [t,x] = get_samples(ctrlParams, t, x, ctrlParams.tolerance);
+    end
     numTime = length(t);
     y = zeros(numTime, 10); 
     for i = 1 : numTime

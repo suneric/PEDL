@@ -10,5 +10,5 @@ function params = params_training()
     params.dropoutFactor = 0; % 0.1,0.2
     params.learningRate = 0.0001; % 0.01,0.001,0.0001
     params.miniBatchSize = 2000; % [50,300]
-    params.numEpochs = 150;
+    params.numEpochs = 100;
 end

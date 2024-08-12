@@ -1,18 +1,18 @@
-function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams, tSpan, predInterval, numCase, numTime, type)
+function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams, f1Max, tSpan, predInterval, numCase, numTime, type)
     net = load(modelFile).net;
     % evaluate time span, larger time span will increase the simulation
     % time when complicated friction involved
-    % test F1 range from 15N ~ 35N
-    f1Min = 5; 
-    f1Range = linspace(0, 20, numCase);
+    % test F1 range from 10N ~ 30N
+    f1Min = f1Max(1); 
+    f1Range = linspace(0, f1Max(2)-f1Max(1), numCase);
     
     % reference time points 
     switch trainParams.type
-        case {"dnn2", "lstm2", "pinn2"} 
+        case {"dnn2", "lstm2", "pinn2", "pirn2"} 
             errs = zeros(2*numCase, numTime);
-        case {"dnn4", "lstm4", "pinn4"} 
+        case {"dnn4", "lstm4", "pinn4", "pirn4"} 
             errs = zeros(4*numCase, numTime);
-        case {"dnn6", "lstm6", "pinn6"} 
+        case {"dnn6", "lstm6", "pinn6", "pirn6"} 
             errs = zeros(6*numCase, numTime);
         otherwise
             disp("unspecify type of model.")
@@ -26,11 +26,11 @@ function avgErr = evaluate_model(modelFile, sysParams, ctrlParams, trainParams, 
         [xp, rmseErr, refTime] = evaluate_single(net, t, x, ctrlParams, trainParams, tSpan, predInterval, numTime, type);
         disp("evaluate "+num2str(i)+" th case, f1: "+num2str(f1Max) + " N, mean square err: " + num2str(mean(rmseErr, "all")));
         switch trainParams.type
-            case {"dnn2", "lstm2", "pinn2"} 
+            case {"dnn2", "lstm2", "pinn2", "pirn2"} 
                 errs(2*(i-1)+1:2*(i-1)+2,:) = rmseErr;
-            case {"dnn4", "lstm4", "pinn4"} 
+            case {"dnn4", "lstm4", "pinn4", "pirn4"} 
                 errs(4*(i-1)+1:4*(i-1)+4,:) = rmseErr;
-            case {"dnn6", "lstm6", "pinn6"} 
+            case {"dnn6", "lstm6", "pinn6", "pirn6"} 
                 errs(6*(i-1)+1:6*(i-1)+6,:) = rmseErr;    
             otherwise
                 disp("unspecify type of model.")
