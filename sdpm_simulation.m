@@ -6,9 +6,7 @@ function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     x0 = zeros(4, 1); % q1, q1d, q2, q2d
     [t,x] = ode45(@(t,x) sdpm_system(t, x, sysParams, ctrlParams), tSpan, x0);
     % sample time points
-    if ctrlParams.fixedTimeStep == 0
-        [t,x] = get_samples(ctrlParams, t, x, ctrlParams.tolerance);
-    end
+    [t,x] = get_samples(ctrlParams, t, x);
     numTime = length(t);
     y = zeros(numTime, 10); 
     for i = 1 : numTime
@@ -28,18 +26,37 @@ function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     end
 end
 
-function [ts, xs] = get_samples(ctrlParams, t, x, tStep)
-    if ctrlParams.friction == "andersson"
-        ts = [t(1)];
-        xs = [x(1,:)];
-        for i = 1:length(t)
-            if(t(i)-ts(end) >= tStep)
-                ts = [ts;t(i)];
-                xs = [xs;x(i,:)];
+function [ts, xs] = get_samples(ctrlParams, t, x)
+    switch ctrlParams.friction
+        case {"none","smooth"}
+            ts = t;
+            xs = x;
+        case {"andersson", "specker"}
+            [ts, xs] = select_samples(ctrlParams, t, x);
+        otherwise
+            ts = t;
+            xs = x;
+    end
+end
+
+function [ts, xs] = select_samples(ctrlParams, t, x)
+    switch ctrlParams.method
+        case "random"
+            indices = randperm(length(t), ctrlParams.numPoints);
+            sortIndices = sort(indices);
+            ts = t(sortIndices);
+            xs = x(sortIndices,:);
+        case "interval"
+            ts = [t(1)];
+            xs = [x(1,:)];
+            for i = 2:length(t)
+                if t(i)-ts(end) >= ctrlParams.interval
+                    ts = [ts;t(i)];
+                    xs = [xs;x(i,:)];
+                end
             end
-        end
-    else
-        ts = t;
-        xs = x;
+        otherwise
+            ts = t;
+            xs = x;
     end
 end

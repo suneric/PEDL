@@ -19,7 +19,7 @@ function [modelFile, trainLoss] = train_pinn_model_4(sampleFile, trainParams)
     % generate data
     % Feature data: 6-D initial state x0 + time interval
     % the label data is a predicted state x=[q1,q2,q1dot,q2dot,q1ddot,q2ddot]
-    initTimes = 1:4; %start from 1 sec to 4 sec with 0.5 sec step 
+    initTimes = 1:trainParams.initTimeStep:4; %start from 1 sec to 4 sec with 0.5 sec step 
     tTrain = [];
     xTrain = [];
     yTrain = [];
@@ -100,7 +100,7 @@ end
 function net = train_adam_update(net, tTrain, xTrain, yTrain, trainParams, monitor)
     % using stochastic gradient decent
     miniBatchSize = trainParams.miniBatchSize;
-    lrRate = trainParams.learningRate;
+    lrRate = trainParams.initLearningRate;
     dataSize = length(tTrain);
     numBatches = floor(dataSize/miniBatchSize);
     numIterations = trainParams.numEpochs * numBatches;
@@ -145,6 +145,14 @@ function net = train_adam_update(net, tTrain, xTrain, yTrain, trainParams, monit
                     Iteration = iter, ...
                     MaximumIteration = numIterations, ...
                     IterationPerEpoch = numBatches);
+            end
+        end
+        % adaptive learning rate
+        if mod(epoch,trainParams.lrDropEpoch) == 0
+            if lrRate > trainParams.stopLearningRate
+                lrRate = lrRate*trainParams.lrDropFactor;
+            else
+                lrRate = trainParams.stopLearningRate;
             end
         end
     end

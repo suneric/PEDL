@@ -2,16 +2,20 @@
 close all;
 clear; 
 clc;
-
-global trainParams;
-trainParams = params_training();
 sysParams = params_system();
 ctrlParams = params_control();
-ctrlParams.fixedTimeStep = 3e-2;
-trainParams.type = "dnn4";
+global trainParams;
+trainParams = params_training();
+trainParams.numSamples = 500;
+trainParams.type = "lstm6";
+trainParams.numEpochs = 50;
+trainParams.initLearningRate = 1e-3;
+trainParams.stopLearningRate = 1e-5;
+trainParams.miniBatchSize = 2000;
+trainParams.lrDropEpoch = 1;
 
 %% plot system motion with a sample
-% f1Max = 25;
+% f1Max = 15;
 % tSpan = [0,5];
 % len = plot_system(sysParams, ctrlParams, f1Max, tSpan);
 % disp(num2str(len)+" time steps");
@@ -20,7 +24,7 @@ trainParams.type = "dnn4";
 if ~exist("\data\", 'dir')
    mkdir("data");
 end
-f1Max = [10,20];
+f1Max = [15,35];
 tSpan = [0,5];
 [dataFile, fMaxRange] = generate_samples(sysParams, ctrlParams, trainParams, f1Max, tSpan);
 % plot(sort(fMaxRange));
@@ -73,28 +77,28 @@ end
 
 %% model evaluation
 % disp("evaluating trained model...")
-f1Max = [5,25];
-tSpan = [0,8];
-predIntervel = 3;
-numCase = 30;
-numTime = 60;
-avgRMSE = evaluate_model(modelFile, sysParams, ctrlParams, trainParams, f1Max, tSpan, predIntervel, numCase, numTime, trainParams.type);
+f1Max = [10,40];
+tSpan = [0,10];
+predIntervel = 10;
+numCase = 50;
+numTime = 100;
+avgRMSE = evaluate_model_with_4_states(modelFile, sysParams, ctrlParams, trainParams, f1Max, tSpan, predIntervel, numCase, numTime, trainParams.type);
 disp(["average rmse", avgRMSE])
 
 %% plot single prediction
 disp("plot prediction..."+modelFile)
-f1Max = 20;
-tSpan = [0,8];
-predIntervel = 8;
+f1Max = 25;
+tSpan = [0,10];
+predIntervel = 10;
 plot_prediction(modelFile, sysParams, ctrlParams, trainParams, f1Max, tSpan, predIntervel, trainParams.type);
 
 %% plot comparision
 % folder = "model";
-% typeList = ["dnn2","lstm2","pinn2"];
-% trainParams.numSamples = 500;
-% numState = 2;
-% f1Max = 20;
-% tSpan = [0,8];
-% predInterval = 8;
-% numTime = 60;
+% typeList = ["dnn4","lstm4","pinn4","dnn6"];
+% trainParams.numSamples = 50;
+% numState = 4;
+% f1Max = 25;
+% tSpan = [0,10];
+% predInterval = 10;
+% numTime = 100;
 % res = compare_model(folder, typeList, sysParams, ctrlParams, trainParams, f1Max, tSpan, predInterval, numTime, numState);

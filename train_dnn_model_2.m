@@ -12,7 +12,7 @@ function [modelFile, trainLoss] = train_dnn_model_2(sampleFile, trainParams)
     % Feature: 6-D initial state (x0) + the predict future time (t)
     % Label: a predicted state x = [q1,q2,q1dot,q2dot,q1ddot,q2ddot]'
     % Start from 1 sec to 4 sec with 0.5 sec step 
-    initTimes = 1:4; 
+    initTimes = 1:trainParams.initTimeStep:4; 
     xTrain = [];
     yTrain = [];
     for i = 1:numSamples
@@ -44,7 +44,7 @@ function [modelFile, trainLoss] = train_dnn_model_2(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons, "Name","fc_"+num2str(i))
-            tanhLayer("Name","activiation_"+num2str(i))
+            tanhLayer("Name","tanh_"+num2str(i))
         ];
     end
     if trainParams.dropoutFactor > 0
@@ -57,7 +57,7 @@ function [modelFile, trainLoss] = train_dnn_model_2(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons,"Name","fc_"+num2str(i))
-            tanhLayer("Name","activiation_"+num2str(i))
+            tanhLayer("Name","tanh_"+num2str(i))
         ];
     end
     
@@ -71,7 +71,7 @@ function [modelFile, trainLoss] = train_dnn_model_2(sampleFile, trainParams)
     plot(lgraph);
     
     options = trainingOptions("adam", ...
-        InitialLearnRate = trainParams.learningRate, ...
+        InitialLearnRate = trainParams.initLearningRate, ...
         MaxEpochs = trainParams.numEpochs, ...
         MiniBatchSize = trainParams.miniBatchSize, ...
         Shuffle = "every-epoch", ...

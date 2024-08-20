@@ -18,7 +18,7 @@ function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParam
         if exist(modelFile, 'file') == 2
             net = load(modelFile).net;
             [xp, rmseErr, ~] = evaluate_single(net, t, x, ctrlParams, trainParams, tSpan, predInterval, numTime, type);
-            res(i) = mean(rmseErr,"all"); 
+            res(i) = mean(rmseErr(1:numState,:),"all"); 
             xPreds{i} = xp;
         end
     end
@@ -26,7 +26,7 @@ function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParam
     % plot
     labels = ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$","$\ddot{q}_1$","$\ddot{q}_2$"];
     colors = ["#FF0000","#0000FF","#00A86B","#00FFFF","#FF00FF","#00FF00","#808080"];
-    figure('Position',[500,200,800,600]);
+    figure('Position',[500,200,800,600], 'Color','white');
     tiledlayout("vertical","TileSpacing","tight")
     h = [];
     for i = 1:numState
@@ -44,15 +44,19 @@ function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParam
             hold on
         end
         xline(1,'k--', 'LineWidth',1);
+        hold on
+        xline(5,'k--', 'LineWidth',1);
         ylabel(labels(i),"Interpreter","latex");
         set(get(gca,'ylabel'),'rotation',0);
         set(gca, 'FontSize', 15);
         set(gca, 'FontName', "Arial")
+        % set(gca, 'XColor', 'none', 'YColor', 'none');
         if i == numState
             xlabel("Time (s)");
         end
     end 
-    lh = legend(h,"FontName","Arial");
-    set(lh, 'Position', [0.5, 0.45, 0.25, 0.15]);
+    % lh = legend(h,"FontName","Arial");
+    % set(lh, 'Position', [0.5, 0.1, 0.25, 0.2]);
+    legend(h,"FontName","Arial", "Location", "eastoutside");
 
 end
