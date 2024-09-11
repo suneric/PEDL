@@ -176,8 +176,13 @@ function [loss, gradients] = modelLoss(net, T, X, Y)
     fY = physics_law([q1;q2], [q1d;q2d], [q1dd;q2dd]);
     fTarget = zeros(size(fY), 'like', fY);
     physicLoss = mse(fY, fTarget);
+
+    % initial constraints
+    T0 = zeros(size(T), 'like', T);
+    [Z0, ~] = forward(net, [X;T0]);
+    initLoss = mse(Z0, X);
     
     global trainParams
-    loss = (1.0-trainParams.alpha)*dataLoss + trainParams.alpha*(physicLoss);
+    loss = dataLoss + physicLoss + initLoss;
     gradients = dlgradient(loss, net.Learnables);
 end

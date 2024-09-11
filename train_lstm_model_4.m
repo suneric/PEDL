@@ -2,11 +2,11 @@ function [modelFile, trainLoss] = train_lstm_model_4(sampleFile, trainParams)
 %% train a LSTM-based model
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = "model\"+trainParams.type+"_"+num2str(numSamples)+".mat";
 
     %% preprocess data for training
     % Refer to the Help "Import Data into Deep Network Designer / Sequences and time series" 
-    initTimes = 1:trainParams.initTimeStep:4; %start from 1 sec to 4 sec with 0.5 sec step 
+    initTimes = 1:trainParams.initTimeStep:5; %start from 1 sec to 4 sec with 0.5 sec step 
     states = {};
     times = [];
     labels = [];
@@ -44,7 +44,7 @@ function [modelFile, trainLoss] = train_lstm_model_4(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
+            reluLayer
         ];
     end
     if trainParams.dropoutFactor > 0
@@ -57,7 +57,7 @@ function [modelFile, trainLoss] = train_lstm_model_4(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
+            reluLayer
         ];
     end
     
@@ -72,6 +72,7 @@ function [modelFile, trainLoss] = train_lstm_model_4(sampleFile, trainParams)
         featureInputLayer(1, Name = "time")]);
     lgraph = connectLayers(lgraph, "time", "cat/in2");
     % plot(lgraph);
+    % analyzeNetwork(lgraph);
 
     % combine a datastore for training
     dsState = arrayDatastore(states, "OutputType", "same", "ReadSize", trainParams.miniBatchSize);
@@ -82,6 +83,9 @@ function [modelFile, trainLoss] = train_lstm_model_4(sampleFile, trainParams)
     
     options = trainingOptions("adam", ...
         InitialLearnRate = trainParams.initLearningRate, ...
+        LearnRateSchedule = "piecewise", ...
+        LearnRateDropFactor = trainParams.lrDropFactor, ...
+        LearnRateDropPeriod = trainParams.lrDropEpoch, ...
         MaxEpochs = trainParams.numEpochs, ...
         MiniBatchSize = trainParams.miniBatchSize, ...
         SequencePaddingDirection = "left", ...

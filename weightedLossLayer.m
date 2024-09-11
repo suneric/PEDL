@@ -28,7 +28,7 @@ classdef weightedLossLayer < nnet.layer.RegressionLayer ...
 
             % final loss, combining data loss and physics loss
             global trainParams;
-            loss = (1.0-trainParams.alpha)*dataLoss + trainParams.alpha*physicLoss;
+            loss = trainParams.alpha*dataLoss + (1-trainParams.alpha)*physicLoss;
         end
 
         function dLdY = backwardLoss(layer,Y,T)

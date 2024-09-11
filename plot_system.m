@@ -1,11 +1,11 @@
-function len = plot_system(sysParams, ctrlParams, f1Max, tSpan)
+function len = plot_system(sysParams, ctrlParams, f1Max, tSpan, numState)
     ctrlParams.fMax = [f1Max; 0]; 
     y = sdpm_simulation(tSpan, sysParams, ctrlParams);
     t = y(:, 1);
     x = y(:, 2:7);
     f1 = y(:, 8);
     fc = y(:, 10);
-    plot_states(t, x);
+    plot_states(t, x, numState);
     plot_forces(t, f1, fc);
     len = length(t);
 end
@@ -16,13 +16,11 @@ function plot_forces(t, f1, fc)
     legend("F1", "Fc");
 end
 
-function plot_states(t, x)
+function plot_states(t, x, numState)
     refClr = "blue";
     labels= ["$q_1$","$q_2$","$\dot{q}_1$","$\dot{q}_2$","$\ddot{q}_1$","$\ddot{q}_2$"];
     figure('Position',[500,100,800,800]);
     tiledlayout("vertical","TileSpacing","tight")
-    numState = size(x);
-    numState = numState(2);
     for i = 1 : numState
         nexttile
         plot(t, x(:, i), 'Color', refClr, 'LineWidth', 2);

@@ -14,7 +14,7 @@ function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParam
     xPreds = cell(numModel, 1);
     for i = 1:numModel
         type = typeList(i);
-        modelFile = folder+"\"+type+"_"+num2str(trainParams.alpha)+"_"+num2str(trainParams.numSamples)+".mat";
+        modelFile = folder+"\"+type+"_"+num2str(trainParams.numSamples)+".mat";
         if exist(modelFile, 'file') == 2
             net = load(modelFile).net;
             [xp, rmseErr, ~] = evaluate_single(net, t, x, ctrlParams, trainParams, tSpan, predInterval, numTime, type);
@@ -44,8 +44,8 @@ function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParam
             hold on
         end
         xline(1,'k--', 'LineWidth',1);
-        hold on
-        xline(5,'k--', 'LineWidth',1);
+        % hold on
+        % xline(5,'k--', 'LineWidth',1);
         ylabel(labels(i),"Interpreter","latex");
         set(get(gca,'ylabel'),'rotation',0);
         set(gca, 'FontSize', 15);

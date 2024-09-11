@@ -1,12 +1,14 @@
 function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     % ODE solver
     if ctrlParams.fixedTimeStep ~= 0
-        tSpan = tSpan(1):ctrlParams.fixedTimeStep:tSpan(2);
+        tSpan = 0:ctrlParams.fixedTimeStep:tSpan(2);
+    else
+        tSpan = [0,tSpan(2)];
     end
     x0 = zeros(4, 1); % q1, q1d, q2, q2d
     [t,x] = ode45(@(t,x) sdpm_system(t, x, sysParams, ctrlParams), tSpan, x0);
     % sample time points
-    [t,x] = get_samples(ctrlParams, t, x);
+    [t,x] = select_samples(ctrlParams, t, x);
     numTime = length(t);
     y = zeros(numTime, 10); 
     for i = 1 : numTime
@@ -26,20 +28,8 @@ function y = sdpm_simulation(tSpan, sysParams, ctrlParams)
     end
 end
 
-function [ts, xs] = get_samples(ctrlParams, t, x)
-    switch ctrlParams.friction
-        case {"none","smooth"}
-            ts = t;
-            xs = x;
-        case {"andersson", "specker"}
-            [ts, xs] = select_samples(ctrlParams, t, x);
-        otherwise
-            ts = t;
-            xs = x;
-    end
-end
-
 function [ts, xs] = select_samples(ctrlParams, t, x)
+    % disp(ctrlParams.method)
     switch ctrlParams.method
         case "random"
             indices = randperm(length(t), ctrlParams.numPoints);

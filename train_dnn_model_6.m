@@ -3,13 +3,13 @@ function [modelFile, trainLoss] = train_dnn_model_6(sampleFile, trainParams)
     % load samples and prepare training dataset
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = "model\"+trainParams.type+"_"+num2str(numSamples)+".mat";
     
     % generate training dataset
     % Feature: 6-D initial state (x0) + the predict future time (t)
     % Label: a predicted state x = [q1,q2,q1dot,q2dot,q1ddot,q2ddot]'
     % Start from 1 sec to 4 sec with 0.5 sec step 
-    initTimes = 1:trainParams.initTimeStep:4; 
+    initTimes = 1:trainParams.initTimeStep:5; 
     xTrain = [];
     yTrain = [];
     for i = 1:numSamples
@@ -41,7 +41,7 @@ function [modelFile, trainLoss] = train_dnn_model_6(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
+            reluLayer
         ];
     end
     if trainParams.dropoutFactor > 0
@@ -54,7 +54,7 @@ function [modelFile, trainLoss] = train_dnn_model_6(sampleFile, trainParams)
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
+            reluLayer
         ];
     end
     
@@ -66,9 +66,13 @@ function [modelFile, trainLoss] = train_dnn_model_6(sampleFile, trainParams)
 
     lgraph = layerGraph(layers);
     % plot(lgraph);
+    % analyzeNetwork(lgraph);
     
     options = trainingOptions("adam", ...
         InitialLearnRate = trainParams.initLearningRate, ...
+        LearnRateSchedule = "piecewise", ...
+        LearnRateDropFactor = trainParams.lrDropFactor, ...
+        LearnRateDropPeriod = trainParams.lrDropEpoch, ...
         MaxEpochs = trainParams.numEpochs, ...
         MiniBatchSize = trainParams.miniBatchSize, ...
         Shuffle = "every-epoch", ...

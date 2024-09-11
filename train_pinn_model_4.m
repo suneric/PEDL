@@ -14,12 +14,12 @@ function [modelFile, trainLoss] = train_pinn_model_4(sampleFile, trainParams)
     % load samples and prepare training dataset
     ds = load(sampleFile);
     numSamples = length(ds.samples);    
-    modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.alpha)+"_"+num2str(numSamples)+".mat";
+    modelFile = "model\"+trainParams.type+"_"+num2str(numSamples)+".mat";
     
     % generate data
     % Feature data: 6-D initial state x0 + time interval
     % the label data is a predicted state x=[q1,q2,q1dot,q2dot,q1ddot,q2ddot]
-    initTimes = 1:trainParams.initTimeStep:4; %start from 1 sec to 4 sec with 0.5 sec step 
+    initTimes = 1:trainParams.initTimeStep:5; %start from 1 sec to 4 sec with 0.5 sec step 
     tTrain = [];
     xTrain = [];
     yTrain = [];
@@ -28,7 +28,7 @@ function [modelFile, trainLoss] = train_pinn_model_4(sampleFile, trainParams)
         t = data(1,:);
         x = data(2:5, :); % q1,q2,q1_dot,q2_dot
         for tInit = initTimes
-            initIdx = find(t > tInit, 1, 'first');
+            initIdx = find(t >= tInit, 1, 'first');
             x0 = x(:, initIdx); % Initial state 
             t0 = t(initIdx); % Start time
             for j = initIdx+1 : length(t)
@@ -45,29 +45,15 @@ function [modelFile, trainLoss] = train_pinn_model_4(sampleFile, trainParams)
     layers = [
         featureInputLayer(numStates+1, "Name", "input")
         ];
-    
-    numMiddle = floor(trainParams.numLayers/2);
-    for i = 1:numMiddle
+
+    for i = 1:trainParams.numLayers
         layers = [
             layers
             fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
+            reluLayer
         ];
     end
-    if trainParams.dropoutFactor > 0
-        layers = [
-            layers
-            dropoutLayer(trainParams.dropoutFactor)
-        ];
-    end
-    for i = numMiddle+1:trainParams.numLayers
-        layers = [
-            layers
-            fullyConnectedLayer(trainParams.numNeurons)
-            tanhLayer
-        ];
-    end
-    
+
     layers = [
         layers
         fullyConnectedLayer(numStates, "Name", "output")
@@ -77,6 +63,7 @@ function [modelFile, trainLoss] = train_pinn_model_4(sampleFile, trainParams)
     net = dlnetwork(layers);
     net = dlupdate(@double, net);
     % plot(net)
+    % analyzeNetwork(net);
     
     % training options
     monitor = trainingProgressMonitor;
@@ -171,15 +158,20 @@ function [loss, gradients] = modelLoss(net, T, X, Y)
     q2d = Z(4,:);
     q1dd = dlgradient(sum(q1d, 'all'), T);
     q2dd = dlgradient(sum(q2d, 'all'), T);
-    % q1d = dlgradient(sum(q1, 'all'), T);
-    % q2d = dlgradient(sum(q2, 'all'), T);
-    
+    q1d = dlgradient(sum(q1, 'all'), T);
+    q2d = dlgradient(sum(q2, 'all'), T);
+
     fY = physics_law([q1;q2], [q1d;q2d], [q1dd;q2dd]);
     fT = zeros(size(fY), 'like', fY);
     physicLoss = mse(fY, fT);
     
+    % initial constraints
+    % T0 = zeros(size(T), 'like', T);
+    % [Z0, ~] = forward(net, [X;T0]);
+    % initLoss = mse(Z0, X);
+    
     % total loss
     global trainParams
-    loss = (1.0-trainParams.alpha)*dataLoss + trainParams.alpha*(physicLoss);
+    loss = trainParams.alpha*dataLoss + (1-trainParams.alpha)*physicLoss;
     gradients = dlgradient(loss, net.Learnables);
 end
