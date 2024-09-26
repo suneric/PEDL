@@ -15,7 +15,7 @@ ctrlParams.numPoints = 220;
 global trainParams;
 trainParams = params_training();
 trainParams.numSamples = 100;
-trainParams.type = "pinn4";
+trainParams.type = "dnn6";
 trainParams.numEpochs = 1000;
 trainParams.numLayers = 5; 
 trainParams.numNeurons = 256;
@@ -130,20 +130,20 @@ avgErr = mean(errs,'all'); % one value of error for estimtation
 disp(["average rmse", avgErr])
 
 %% plot single prediction
-f1Max = 25;
+f1Max = 32;
 ctrlParams.fixedTimeStep = 0;
 ctrlParams.method = "origin";
 tSpan = [1,6];
-predIntervel = 5;
+predIntervel = 8;
 numState = 4;  
-% trainParams.type = "lstm4";
-% modelFile = "model\"+trainParams.type+"_"+num2str(trainParams.numSamples)+".mat";
+trainParams.type = "dnn6";
+modelFile = "model_best\"+trainParams.type+"_"+num2str(trainParams.numSamples)+".mat";
 disp("plot prediction..."+modelFile)
 net = load(modelFile).net;
 [t,x,xp] = plot_prediction(net, sysParams, ctrlParams, trainParams, f1Max, tSpan, predIntervel, trainParams.type, numState);
 tSnapshot = [1,6];
-sdpm_snapshot(sysParams,t,x(:,2),x(:,3),xp(:,2),xp(:,3),tSnapshot);
-% sdpm_animation(sysParams, t, x(:,2),x(:,3),xp(:,2),xp(:,3))
+% sdpm_snapshot(sysParams,t,x(:,2),x(:,3),xp(:,2),xp(:,3),tSnapshot);
+% sdpm_animation(sysParams,t,x(:,2),x(:,3),xp(:,2),xp(:,3),tSnapshot);
 
 %% plot training curves
 dnnLoss = load("model\dnn4_100_loss.mat").loss;
@@ -151,7 +151,7 @@ lstmLoss = load("model\lstm4_100_loss.mat").loss;
 pinnLoss = load("model\pinn4_100_loss.mat").loss;
 pgnnLoss = load("model\dnn6_100_loss.mat").loss;
 
-figure('Position',[500,100,800,400]); 
+figure('Position',[500,100,500,400]); 
 iter = 1:10000;
 % smoothdata(dnnLoss(iter),'gaussian')
 plot(iter,dnnLoss(iter), "LineWidth",2,"DisplayName","MLP");
@@ -172,9 +172,9 @@ folder = "model";
 typeList = ["dnn4","lstm4","pinn4","dnn6"];
 trainParams.numSamples = 100;
 numState = 4;
-f1Max = 35;
-tSpan = [0,6];
-predInterval = 8;
+f1Max = 25;
+tSpan = [1,9];
+predInterval = 10;
 numTime = 150;
 res = compare_model(folder, typeList, sysParams, ctrlParams, trainParams, f1Max, tSpan, predInterval, numTime, numState);
 

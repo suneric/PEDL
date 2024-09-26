@@ -6,8 +6,8 @@ function [xp, rmseErr, refTime] = evaluate_single(net, t, x, ctrlParams, trainPa
     tTestIndices = zeros(numTime,1);
     refTime = linspace(tSpan(1), tSpan(2), numTime);
     for k = 1:numTime
-        indices = find(t <= refTime(k), 1, 'last');
-        tTestIndices(k) = indices(end);
+        idx = find(t >= refTime(k), 1, 'first');
+        tTestIndices(k) = idx;
     end
     rmseErr = root_square_err(tTestIndices, x, xp);
 end

@@ -1,11 +1,11 @@
 function res = compare_model(folder, typeList, sysParams, ctrlParams, trainParams, f1Max, tSpan, predInterval, numTime, numState)
     % simulation baseline
     ctrlParams.fMax = [f1Max; 0]; 
-    y = sdpm_simulation(tSpan, sysParams, ctrlParams);
+    y = sdpm_simulation([0,tSpan(2)], sysParams, ctrlParams);
     t = y(:,1);
     x = y(:,2:7);
 
-    initIdx = find(t > ctrlParams.fSpan(2), 1, 'first');
+    initIdx = find(t >= tSpan(1), 1, 'first');
     tp = t(initIdx:end);
 
     % load model and predict
